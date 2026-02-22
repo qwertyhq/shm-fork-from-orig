@@ -1,0 +1,84 @@
+<div class="container" id="login-form" ng-controller="SignupPageController">
+    <a href="index.html" class="login-logo">
+        <h1><b>{{ title }}</b></h1>
+        <!--<img masked-image src="assets/img/logo-big.png">-->
+    </a>
+        <div class="row">
+            <div class="col-md-4 col-md-offset-4">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h2>Вход для пользователей</h2>
+                    </div>
+                    <div class="panel-body">
+
+                        <form action="" class="form-horizontal" id="validate-form">
+                            <div class="form-group mb-md">
+                                <div class="col-xs-12">
+                                    <div class="input-group">
+                                        <span class="input-group-addon">
+                                            <i class="fa fa-user"></i>
+                                        </span>
+                                        <input type="text" auto-focus next-focus tabindex=1 ng-model="login" class="form-control" placeholder="Логин или email" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group mb-md">
+                                <div class="col-xs-12">
+                                    <div class="input-group">
+                                        <span class="input-group-addon">
+                                            <i class="fa fa-key"></i>
+                                        </span>
+                                        <input type="password" next-focus tabindex=2 ng-model="password" class="form-control" id="exampleInputPassword1" placeholder="Пароль">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group mb-md" ng-show="otpRequired">
+                                <div class="col-xs-12">
+                                    <div class="input-group">
+                                        <span class="input-group-addon">
+                                            <i class="fa fa-shield"></i>
+                                        </span>
+                                        <input type="text" tabindex=3 ng-model="otp_token" class="form-control" placeholder="Код 2FA (6 цифр)" maxlength="8" autofocus>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-danger" ng-show="loginError" style="margin-bottom: 10px;">
+                                {{ loginError }}
+                            </div>
+
+                            <div class="form-group mb-n">
+                                <div class="col-xs-12">
+                                    <a href="#!/extras-forgotpassword" class="pull-left">Забыли пароль?</a>
+                                    <!--<div class="checkbox-inline icheck pull-right p-n">
+                                        <label for="">
+                                            <input icheck type="checkbox"></input>
+                                            Запомнить пароль
+                                        </label>
+                                    </div>-->
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="panel-footer">
+                        <div class="clearfix">
+                            <a href="#!/extras-registration" class="btn btn-default pull-left" ng-hide="otpRequired">Регистрация</a>
+                            <a href="#/" tabindex=4 ng-click="logIn()" class="btn btn-primary pull-right">
+                                <span ng-hide="otpRequired">Войти</span>
+                                <span ng-show="otpRequired">Подтвердить</span>
+                            </a>
+                        </div>
+                        <div ng-show="passkeyAvailable" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee;">
+                            <button class="btn btn-default btn-block" ng-click="loginWithPasskey()" ng-disabled="passkeyLoading">
+                                <i class="fa fa-key"></i>
+                                <span ng-hide="passkeyLoading">Войти через Passkey</span>
+                                <span ng-show="passkeyLoading"><i class="fa fa-spinner fa-spin"></i> Авторизация...</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+</div>
