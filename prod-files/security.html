@@ -1,0 +1,212 @@
+    <ol class="breadcrumb">
+        <li><a href="#/">Главная</a></li>
+        <li class="active">Безопасность</li>
+    </ol>
+
+<div class="container-fluid" ng-controller="ShmSecurityController">
+
+    <!-- Messages -->
+    <div ng-show="message" class="alert alert-{{ messageType }} alert-dismissible" role="alert">
+        <button type="button" class="close" ng-click="clearMessage()">&times;</button>
+        {{ message }}
+    </div>
+
+    <div ng-show="loading" class="text-center" style="padding: 40px;">
+        <i class="fa fa-spinner fa-spin fa-2x"></i>
+        <p>Загрузка...</p>
+    </div>
+
+    <div ng-hide="loading">
+
+        <!-- ============ PASSKEY SECTION ============ -->
+        <div class="row-fluid">
+            <div class="col-md-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <i class="fa fa-key"></i> Passkey (вход без пароля)
+                        <span ng-show="passkeyEnabled" class="label label-success pull-right">Активен</span>
+                        <span ng-hide="passkeyEnabled" class="label label-default pull-right">Не настроен</span>
+                    </div>
+                    <div class="panel-body">
+                        <p class="text-muted">
+                            Passkey позволяет входить в аккаунт с помощью отпечатка пальца, Face ID или PIN-кода устройства.
+                            Это безопасная альтернатива паролю, которая работает даже если Telegram недоступен.
+                        </p>
+
+                        <div ng-hide="passkeySupported" class="alert alert-warning">
+                            <i class="fa fa-exclamation-triangle"></i>
+                            Ваш браузер не поддерживает Passkey. Попробуйте Chrome, Safari или Edge последней версии.
+                        </div>
+
+                        <!-- Registered passkeys list -->
+                        <div ng-show="passkeys.length > 0">
+                            <h5>Зарегистрированные ключи:</h5>
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Название</th>
+                                        <th>Дата добавления</th>
+                                        <th style="width: 100px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="pk in passkeys">
+                                        <td>
+                                            <i class="fa fa-shield"></i>
+                                            {{ pk.name }}
+                                        </td>
+                                        <td>{{ pk.created_at }}</td>
+                                        <td>
+                                            <button class="btn btn-xs btn-danger" ng-click="deletePasskey(pk.id, pk.name)">
+                                                <i class="fa fa-trash"></i> Удалить
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div ng-hide="passkeys.length > 0" class="well well-sm text-center">
+                            <p class="text-muted">Нет зарегистрированных Passkey</p>
+                        </div>
+                    </div>
+                    <div class="panel-footer" ng-show="passkeySupported">
+                        <div class="input-group" style="max-width: 500px;">
+                            <input type="text" class="form-control" ng-model="newPasskeyName"
+                                   placeholder="Название ключа (необязательно)">
+                            <span class="input-group-btn">
+                                <button class="btn btn-primary" ng-click="registerPasskey()">
+                                    <i class="fa fa-plus"></i> Добавить Passkey
+                                </button>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ EMAIL SECTION ============ -->
+        <div class="row-fluid">
+            <div class="col-md-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <i class="fa fa-envelope"></i> Email для входа
+                        <span ng-show="email" class="label label-success pull-right">Привязан</span>
+                        <span ng-hide="email" class="label label-default pull-right">Не привязан</span>
+                    </div>
+                    <div class="panel-body">
+                        <p class="text-muted">
+                            Привяжите email для входа на сайт через email + пароль.
+                            Это полезно, если Telegram станет недоступен.
+                        </p>
+
+                        <form class="form-horizontal">
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label">Email</label>
+                                <div class="col-sm-5">
+                                    <input type="email" class="form-control" ng-model="newEmail"
+                                           placeholder="your@email.com">
+                                </div>
+                                <div class="col-sm-2">
+                                    <button class="btn btn-success" ng-click="saveEmail()">
+                                        <i class="fa fa-check"></i> Сохранить
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+
+                        <div ng-show="email" class="alert alert-info">
+                            <i class="fa fa-info-circle"></i>
+                            Текущий email: <strong>{{ email }}</strong>.
+                            Используйте этот email вместо логина для входа на сайте.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ PASSWORD SECTION ============ -->
+        <div class="row-fluid">
+            <div class="col-md-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <i class="fa fa-lock"></i> Пароль для входа
+                    </div>
+                    <div class="panel-body">
+                        <p class="text-muted">
+                            Установите или измените пароль для входа через email.
+                            Если вы регистрировались через Telegram, у вас случайный пароль — установите свой.
+                        </p>
+
+                        <form class="form-horizontal">
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label">Новый пароль</label>
+                                <div class="col-sm-5">
+                                    <input type="password" class="form-control" ng-model="newPassword"
+                                           placeholder="Минимум 6 символов">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label">Повторите пароль</label>
+                                <div class="col-sm-5">
+                                    <input type="password" class="form-control" ng-model="confirmPassword"
+                                           placeholder="Повторите пароль">
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="panel-footer">
+                        <button class="btn btn-warning" ng-click="changePassword()"
+                                ng-disabled="!newPassword || !confirmPassword">
+                            <i class="fa fa-save"></i> Установить пароль
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ STATUS SECTION ============ -->
+        <div class="row-fluid">
+            <div class="col-md-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <i class="fa fa-info-circle"></i> Статус методов входа
+                    </div>
+                    <div class="panel-body">
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <td><i class="fa fa-telegram"></i> Telegram</td>
+                                    <td><span class="label label-success">Активен</span></td>
+                                    <td class="text-muted">Вход через Telegram бота</td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fa fa-key"></i> Passkey</td>
+                                    <td>
+                                        <span ng-show="passkeyEnabled" class="label label-success">Активен</span>
+                                        <span ng-hide="passkeyEnabled" class="label label-default">Не настроен</span>
+                                    </td>
+                                    <td class="text-muted">Вход по отпечатку / Face ID / PIN</td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fa fa-envelope"></i> Email + пароль</td>
+                                    <td>
+                                        <span ng-show="email" class="label label-success">Привязан</span>
+                                        <span ng-hide="email" class="label label-default">Не привязан</span>
+                                    </td>
+                                    <td class="text-muted">Вход через email и пароль на сайте</td>
+                                </tr>
+                                <tr ng-show="otpEnabled">
+                                    <td><i class="fa fa-mobile"></i> OTP (2FA)</td>
+                                    <td><span class="label label-success">Активен</span></td>
+                                    <td class="text-muted">Двухфакторная аутентификация</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- ng-hide loading -->
+</div>
