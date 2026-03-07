@@ -1,0 +1,1 @@
+{{ user.add_bonus( promo.settings.amount, 'Зачисление бонусов по промокоду: ' _ promo.id ) }}
