@@ -267,8 +267,8 @@ send_webhook "user.expires_in_24h" '{
 }'
 
 
-# ─── TEST 10: Unknown event (catch-all → admin log) ───
-send_webhook "unknown event (catch-all)" '{
+# ─── TEST 10: Ignored user.* event (should be silently skipped) ───
+send_webhook "user.updated (ignored)" '{
     "scope": "user",
     "event": "user.updated",
     "timestamp": "2026-03-08T15:00:00Z",
@@ -280,8 +280,16 @@ send_webhook "unknown event (catch-all)" '{
     "meta": {}
 }'
 
+# ─── TEST 11: Non-user event (catch-all → admin log) ───
+send_webhook "system event (catch-all)" '{
+    "scope": "system",
+    "event": "system.startup",
+    "timestamp": "2026-03-08T15:00:00Z",
+    "data": {},
+    "meta": {}
+}'
 
-# ─── TEST 11: Missing event field ───
+# ─── TEST 12: Missing event field ───
 send_webhook "missing event (should error)" '{
     "scope": "user",
     "data": {

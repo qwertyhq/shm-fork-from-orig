@@ -97,20 +97,29 @@ WEBHOOK PAYLOAD:
     {{ END }}
 {{ END }}
 
-{{# Fallback Telegram ID из SHM #}}
-{{ IF !telegram_id && shm_user_id }}
+{{# Загружаем полный профиль из SHM #}}
+{{ shm_user_balance  = '' }}
+{{ shm_partner_id    = '' }}
+{{ shm_partner_login = '' }}
+{{ IF shm_user_id }}
     {{ shm_user = user.id(shm_user_id) }}
     {{ IF shm_user }}
-        {{ telegram_id  = shm_user.settings.telegram.chat_id || '' }}
-        {{ shm_tg_login = shm_user.settings.telegram.username || shm_user.settings.telegram.login || '' }}
+        {{ IF !telegram_id }}
+            {{ telegram_id = shm_user.settings.telegram.chat_id || '' }}
+        {{ END }}
+        {{ IF !shm_tg_login }}
+            {{ shm_tg_login = shm_user.settings.telegram.username || shm_user.settings.telegram.login || '' }}
+        {{ END }}
+        {{ shm_user_balance = shm_user.balance }}
+        {{ shm_partner_id   = shm_user.partner_id || '' }}
     {{ END }}
 {{ END }}
 
-{{# Получаем @login для админ-уведомлений #}}
-{{ IF !shm_tg_login && shm_user_id }}
-    {{ shm_user = user.id(shm_user_id) }}
-    {{ IF shm_user }}
-        {{ shm_tg_login = shm_user.settings.telegram.username || shm_user.settings.telegram.login || '' }}
+{{# Загружаем логин реферала #}}
+{{ IF shm_partner_id }}
+    {{ partner_user = user.id(shm_partner_id) }}
+    {{ IF partner_user }}
+        {{ shm_partner_login = partner_user.settings.telegram.username || partner_user.settings.telegram.login || partner_user.login || '' }}
     {{ END }}
 {{ END }}
 
@@ -268,9 +277,18 @@ WEBHOOK PAYLOAD:
     {{ admin_msg = "📡 <b>Не подключён</b> " _ stage_icon _ "\n\n" }}
     {{ admin_msg = admin_msg _ "👤 <code>" _ username _ "</code>" }}
     {{ IF shm_tg_login }}
-        {{ admin_msg = admin_msg _ " (@" _ shm_tg_login _ ")" }}
+        {{ admin_msg = admin_msg _ ' (<a href="https://t.me/' _ shm_tg_login _ '">@' _ shm_tg_login _ '</a>)' }}
     {{ END }}
     {{ admin_msg = admin_msg _ "\n" }}
+    {{ IF service_name }}
+        {{ admin_msg = admin_msg _ "📦 " _ service_name _ "\n" }}
+    {{ END }}
+    {{ IF shm_user_id }}
+        {{ admin_msg = admin_msg _ "💰 Баланс: " _ shm_user_balance _ " ₽\n" }}
+    {{ END }}
+    {{ IF shm_partner_login }}
+        {{ admin_msg = admin_msg _ "🤝 Реферал: @" _ shm_partner_login _ "\n" }}
+    {{ END }}
     {{ admin_msg = admin_msg _ "⏰ Не подключался: " _ not_connected_hours _ "ч\n" }}
     {{ admin_msg = admin_msg _ "📨 Стадия: " _ stage _ "/3\n" }}
     {{ admin_msg = admin_msg _ "✉️ Отправка: " _ (send_ok ? '✅' : '❌') _ "\n\n" }}
@@ -367,9 +385,18 @@ WEBHOOK PAYLOAD:
     {{ admin_msg = "✅ <b>Первое подключение!</b>\n\n" }}
     {{ admin_msg = admin_msg _ "👤 <code>" _ username _ "</code>" }}
     {{ IF shm_tg_login }}
-        {{ admin_msg = admin_msg _ " (@" _ shm_tg_login _ ")" }}
+        {{ admin_msg = admin_msg _ ' (<a href="https://t.me/' _ shm_tg_login _ '">@' _ shm_tg_login _ '</a>)' }}
     {{ END }}
     {{ admin_msg = admin_msg _ "\n" }}
+    {{ IF service_name }}
+        {{ admin_msg = admin_msg _ "📦 " _ service_name _ "\n" }}
+    {{ END }}
+    {{ IF shm_user_id }}
+        {{ admin_msg = admin_msg _ "💰 Баланс: " _ shm_user_balance _ " ₽\n" }}
+    {{ END }}
+    {{ IF shm_partner_login }}
+        {{ admin_msg = admin_msg _ "🤝 Реферал: @" _ shm_partner_login _ "\n" }}
+    {{ END }}
     {{ IF was_notified > 0 }}
         {{ admin_msg = admin_msg _ "📨 Напоминаний до подключения: " _ was_notified _ "\n" }}
     {{ ELSE }}
@@ -476,9 +503,18 @@ WEBHOOK PAYLOAD:
     {{ admin_msg = "📊 <b>Трафик " _ threshold _ "%</b>\n\n" }}
     {{ admin_msg = admin_msg _ "👤 <code>" _ username _ "</code>" }}
     {{ IF shm_tg_login }}
-        {{ admin_msg = admin_msg _ " (@" _ shm_tg_login _ ")" }}
+        {{ admin_msg = admin_msg _ ' (<a href="https://t.me/' _ shm_tg_login _ '">@' _ shm_tg_login _ '</a>)' }}
     {{ END }}
     {{ admin_msg = admin_msg _ "\n" }}
+    {{ IF service_name }}
+        {{ admin_msg = admin_msg _ "📦 " _ service_name _ "\n" }}
+    {{ END }}
+    {{ IF shm_user_id }}
+        {{ admin_msg = admin_msg _ "💰 Баланс: " _ shm_user_balance _ " ₽\n" }}
+    {{ END }}
+    {{ IF shm_partner_login }}
+        {{ admin_msg = admin_msg _ "🤝 Реферал: @" _ shm_partner_login _ "\n" }}
+    {{ END }}
     {{ IF limit_gb > 0 }}
         {{ admin_msg = admin_msg _ "📈 " _ used_gb _ " / " _ limit_gb _ " ГБ\n" }}
     {{ END }}
@@ -559,9 +595,18 @@ WEBHOOK PAYLOAD:
     {{ admin_msg = "🚫 <b>Трафик исчерпан (100%)</b>\n\n" }}
     {{ admin_msg = admin_msg _ "👤 <code>" _ username _ "</code>" }}
     {{ IF shm_tg_login }}
-        {{ admin_msg = admin_msg _ " (@" _ shm_tg_login _ ")" }}
+        {{ admin_msg = admin_msg _ ' (<a href="https://t.me/' _ shm_tg_login _ '">@' _ shm_tg_login _ '</a>)' }}
     {{ END }}
     {{ admin_msg = admin_msg _ "\n" }}
+    {{ IF service_name }}
+        {{ admin_msg = admin_msg _ "📦 " _ service_name _ "\n" }}
+    {{ END }}
+    {{ IF shm_user_id }}
+        {{ admin_msg = admin_msg _ "💰 Баланс: " _ shm_user_balance _ " ₽\n" }}
+    {{ END }}
+    {{ IF shm_partner_login }}
+        {{ admin_msg = admin_msg _ "🤝 Реферал: @" _ shm_partner_login _ "\n" }}
+    {{ END }}
     {{ IF limit_gb > 0 }}
         {{ admin_msg = admin_msg _ "📈 " _ used_gb _ " / " _ limit_gb _ " ГБ\n" }}
     {{ END }}
@@ -591,11 +636,13 @@ WEBHOOK PAYLOAD:
 
 
 {{# ═══════════════════════════════════════════════════════ #}}
-{{#  Игнорируем события истечения подписки                   #}}
+{{#  Игнорируем все user.* события, не обработанные выше    #}}
+{{#  (not_connected, first_connected, bandwidth, limited    #}}
+{{#   уже обработаны и завершены через STOP)                #}}
 {{# ═══════════════════════════════════════════════════════ #}}
 
-{{ IF event.match('^user\\.expires_in_') || event.match('^user\\.expired') || event == 'user.modified' || event == 'user.disabled' || event == 'user.updated' }}
-{{ toJson({ skip => 'ignored_event', event => event }) }}
+{{ IF event.match('^user\\.') }}
+{{ toJson({ skip => 'ignored_user_event', event => event }) }}
 {{ STOP }}
 {{ END }}
 
