@@ -101,6 +101,7 @@ WEBHOOK PAYLOAD:
 {{ shm_user_balance  = '' }}
 {{ shm_partner_id    = '' }}
 {{ shm_partner_login = '' }}
+{{ lang = 'ru' }}
 {{ IF shm_user_id }}
     {{ shm_user = user.id(shm_user_id) }}
     {{ IF shm_user }}
@@ -112,6 +113,11 @@ WEBHOOK PAYLOAD:
         {{ END }}
         {{ shm_user_balance = shm_user.balance }}
         {{ shm_partner_id   = shm_user.partner_id || '' }}
+        {{# Определяем язык: ru если language_code == 'ru', иначе en #}}
+        {{ user_lang_code = shm_user.settings.telegram.language_code || 'ru' }}
+        {{ IF user_lang_code != 'ru' }}
+            {{ lang = 'en' }}
+        {{ END }}
     {{ END }}
 {{ END }}
 
@@ -188,6 +194,7 @@ WEBHOOK PAYLOAD:
 
     {{# ─── СТАДИЯ 1 (6ч): Мягкое приветственное ─── #}}
     {{ IF stage == 1 }}
+      {{ IF lang == 'ru' }}
         {{ message = "🎉 <b>Вижу что вы не подключались к VPN</b>\n\n" }}
         {{ message = message _ service_line }}
         {{ message = message _ "⚠️ <b>Осталось настроить VPN</b>\n\n" }}
@@ -195,22 +202,53 @@ WEBHOOK PAYLOAD:
         {{ message = message _ "• Скачать приложение\n" }}
         {{ message = message _ "• Подключить VPN\n" }}
         {{ message = message _ "• Начать пользоваться" }}
+      {{ ELSE }}
+        {{ message = "🎉 <b>Looks like you haven't connected to VPN yet</b>\n\n" }}
+        {{ message = message _ "⚠️ <b>VPN setup is still needed</b>\n\n" }}
+        {{ message = message _ "Tap the button below to:\n" }}
+        {{ message = message _ "• Download the app\n" }}
+        {{ message = message _ "• Connect VPN\n" }}
+        {{ message = message _ "• Start browsing securely" }}
+      {{ END }}
 
     {{# ─── СТАДИЯ 2 (24ч): Повторное с акцентом ─── #}}
     {{ ELSIF stage == 2 }}
+      {{ IF lang == 'ru' }}
         {{ message = "👋 <b>Напоминаю — ваш VPN всё ещё не настроен</b>\n\n" }}
         {{ message = message _ service_line }}
         {{ message = message _ "Подписка активна, но вы ещё ни разу не подключались.\n\n" }}
         {{ message = message _ "Настройка займёт <b>пару минут</b> — нажмите кнопку ниже 👇" }}
+      {{ ELSE }}
+        {{ message = "👋 <b>Reminder — your VPN is still not set up</b>\n\n" }}
+        {{ message = message _ "Your subscription is active, but you haven't connected yet.\n\n" }}
+        {{ message = message _ "Setup takes just <b>a couple of minutes</b> — tap the button below 👇" }}
+      {{ END }}
 
     {{# ─── СТАДИЯ 3 (48ч): Финальное + промокод ─── #}}
     {{ ELSE }}
+      {{ IF lang == 'ru' }}
         {{ message = "⚠️ <b>Последнее напоминание о VPN</b>\n\n" }}
         {{ message = message _ service_line }}
         {{ message = message _ "Ваша подписка активна, но VPN так и не был настроен.\n\n" }}
         {{ message = message _ "🎁 Активируйте промокод <code>100_HQVPN</code> и получите <b>100 ₽</b> на баланс!\n\n" }}
         {{ message = message _ "Если возникли сложности — напишите в поддержку, мы поможем!\n\n" }}
         {{ message = message _ "👇 Нажмите кнопку и настройте за 2 минуты:" }}
+      {{ ELSE }}
+        {{ message = "⚠️ <b>Final VPN setup reminder</b>\n\n" }}
+        {{ message = message _ "Your subscription is active, but VPN was never configured.\n\n" }}
+        {{ message = message _ "🎁 Use promo code <code>100_HQVPN</code> to get <b>100 ₽</b> bonus!\n\n" }}
+        {{ message = message _ "Having trouble? Contact support, we'll help!\n\n" }}
+        {{ message = message _ "👇 Tap the button and set up in 2 minutes:" }}
+      {{ END }}
+    {{ END }}
+
+    {{# Кнопки #}}
+    {{ IF lang == 'ru' }}
+        {{ btn_setup = '📲 Настроить VPN' }}
+        {{ btn_support = '💬 Поддержка' }}
+    {{ ELSE }}
+        {{ btn_setup = '📲 Set up VPN' }}
+        {{ btn_support = '💬 Support' }}
     {{ END }}
 
     {{# Отправка юзеру #}}
@@ -219,8 +257,8 @@ WEBHOOK PAYLOAD:
         'text'         => message,
         'parse_mode'   => 'HTML',
         'reply_markup' => { 'inline_keyboard' => [
-            [{ 'text' => '📲 Настроить VPN', 'url' => 'https://t.me/hq_vpn_bot/web', 'style' => 'primary' }],
-            [{ 'text' => '💬 Поддержка', 'url' => 'https://t.me/hq_vpn_support_bot' }]
+            [{ 'text' => btn_setup, 'url' => 'https://t.me/hq_vpn_bot/web', 'style' => 'primary' }],
+            [{ 'text' => btn_support, 'url' => 'https://t.me/hq_vpn_support_bot' }]
         ]}
     })) }}
     {{ send_ok = send_result.ok || 0 }}
@@ -357,19 +395,31 @@ WEBHOOK PAYLOAD:
     {{ sent_user = 0 }}
     {{ IF telegram_id && TG_TOKEN }}
 
-        {{ msg = "🎉 <b>VPN успешно подключён!</b>\n\n" }}
-        {{ IF service_name }}
-            {{ msg = msg _ "📦 Услуга: <b>" _ service_name _ "</b>\n\n" }}
+        {{ IF lang == 'ru' }}
+            {{ msg = "🎉 <b>VPN успешно подключён!</b>\n\n" }}
+            {{ IF service_name }}
+                {{ msg = msg _ "📦 Услуга: <b>" _ service_name _ "</b>\n\n" }}
+            {{ END }}
+            {{ msg = msg _ "✅ Всё работает! Теперь ваш интернет защищён." }}
+            {{ btn_open = '📱 Открыть приложение' }}
+            {{ btn_menu = '🌐 Главное меню' }}
+        {{ ELSE }}
+            {{ msg = "🎉 <b>VPN successfully connected!</b>\n\n" }}
+            {{ IF service_name }}
+                {{ msg = msg _ "📦 Service: <b>" _ service_name _ "</b>\n\n" }}
+            {{ END }}
+            {{ msg = msg _ "✅ All set! Your internet is now protected." }}
+            {{ btn_open = '📱 Open app' }}
+            {{ btn_menu = '🌐 Main menu' }}
         {{ END }}
-        {{ msg = msg _ "✅ Всё работает! Теперь ваш интернет защищён." }}
 
         {{ send_result = http.post(tg_url, 'content_type', 'application/json', 'content', toJson({
             'chat_id'      => telegram_id,
             'text'         => msg,
             'parse_mode'   => 'HTML',
             'reply_markup' => { 'inline_keyboard' => [
-                [{ 'text' => '📱 Открыть приложение', 'url' => 'https://t.me/hq_vpn_bot/web', 'style' => 'success' }],
-                [{ 'text' => '🌐 Главное меню', 'callback_data' => '/menu' }]
+                [{ 'text' => btn_open, 'url' => 'https://t.me/hq_vpn_bot/web', 'style' => 'success' }],
+                [{ 'text' => btn_menu, 'callback_data' => '/menu' }]
             ]}
         })) }}
         {{ sent_user = send_result.ok || 0 }}
@@ -446,25 +496,53 @@ WEBHOOK PAYLOAD:
     {{ IF telegram_id && TG_TOKEN }}
 
         {{ IF threshold >= 90 }}
-            {{ msg = "🔴 <b>Трафик почти исчерпан!</b>\n\n" }}
-            {{ msg = msg _ "Использовано <b>" _ threshold _ "%</b> от лимита" }}
-            {{ IF limit_gb > 0 }}
-                {{ msg = msg _ " (" _ used_gb _ " / " _ limit_gb _ " ГБ)" }}
+            {{ IF lang == 'ru' }}
+                {{ msg = "🔴 <b>Трафик почти исчерпан!</b>\n\n" }}
+                {{ msg = msg _ "Использовано <b>" _ threshold _ "%</b> от лимита" }}
+                {{ IF limit_gb > 0 }}
+                    {{ msg = msg _ " (" _ used_gb _ " / " _ limit_gb _ " ГБ)" }}
+                {{ END }}
+                {{ msg = msg _ ".\n\n" }}
+                {{ msg = msg _ "⚠️ Скоро трафик закончится.\n\n" }}
+                {{ msg = msg _ "Нажмите кнопку ниже, чтобы сбросить трафик 👇" }}
+            {{ ELSE }}
+                {{ msg = "🔴 <b>Traffic almost exhausted!</b>\n\n" }}
+                {{ msg = msg _ "Used <b>" _ threshold _ "%</b> of limit" }}
+                {{ IF limit_gb > 0 }}
+                    {{ msg = msg _ " (" _ used_gb _ " / " _ limit_gb _ " GB)" }}
+                {{ END }}
+                {{ msg = msg _ ".\n\n" }}
+                {{ msg = msg _ "⚠️ Traffic will run out soon.\n\n" }}
+                {{ msg = msg _ "Tap the button below to reset traffic 👇" }}
             {{ END }}
-            {{ msg = msg _ ".\n\n" }}
-            {{ msg = msg _ "⚠️ Скоро трафик закончится.\n\n" }}
-            {{ msg = msg _ "Нажмите кнопку ниже, чтобы сбросить трафик 👇" }}
             {{ btn_style = 'danger' }}
         {{ ELSE }}
-            {{ msg = "⚠️ <b>Трафик " _ threshold _ "% использован</b>\n\n" }}
-            {{ msg = msg _ "Использовано <b>" _ threshold _ "%</b> от лимита" }}
-            {{ IF limit_gb > 0 }}
-                {{ msg = msg _ " (" _ used_gb _ " / " _ limit_gb _ " ГБ)" }}
+            {{ IF lang == 'ru' }}
+                {{ msg = "⚠️ <b>Трафик " _ threshold _ "% использован</b>\n\n" }}
+                {{ msg = msg _ "Использовано <b>" _ threshold _ "%</b> от лимита" }}
+                {{ IF limit_gb > 0 }}
+                    {{ msg = msg _ " (" _ used_gb _ " / " _ limit_gb _ " ГБ)" }}
+                {{ END }}
+                {{ msg = msg _ ".\n\n" }}
+                {{ msg = msg _ "💡 При исчерпании трафик сбросится автоматически с баланса.\n" }}
+                {{ msg = msg _ "Или сбросьте сейчас вручную 👇" }}
+            {{ ELSE }}
+                {{ msg = "⚠️ <b>Traffic " _ threshold _ "% used</b>\n\n" }}
+                {{ msg = msg _ "Used <b>" _ threshold _ "%</b> of limit" }}
+                {{ IF limit_gb > 0 }}
+                    {{ msg = msg _ " (" _ used_gb _ " / " _ limit_gb _ " GB)" }}
+                {{ END }}
+                {{ msg = msg _ ".\n\n" }}
+                {{ msg = msg _ "💡 When exhausted, traffic resets automatically from balance.\n" }}
+                {{ msg = msg _ "Or reset it manually now 👇" }}
             {{ END }}
-            {{ msg = msg _ ".\n\n" }}
-            {{ msg = msg _ "💡 При исчерпании трафик сбросится автоматически с баланса.\n" }}
-            {{ msg = msg _ "Или сбросьте сейчас вручную 👇" }}
             {{ btn_style = 'primary' }}
+        {{ END }}
+
+        {{ IF lang == 'ru' }}
+            {{ btn_traffic = '🔄 Сбросить трафик' }}
+        {{ ELSE }}
+            {{ btn_traffic = '🔄 Reset traffic' }}
         {{ END }}
 
         {{ send_result = http.post(tg_url, 'content_type', 'application/json', 'content', toJson({
@@ -472,7 +550,7 @@ WEBHOOK PAYLOAD:
             'text'         => msg,
             'parse_mode'   => 'HTML',
             'reply_markup' => { 'inline_keyboard' => [
-                [{ 'text' => '🔄 Сбросить трафик', 'url' => 'https://t.me/hq_vpn_bot/web', 'style' => btn_style }]
+                [{ 'text' => btn_traffic, 'url' => 'https://t.me/hq_vpn_bot/web', 'style' => btn_style }]
             ]}
         })) }}
         {{ sent_user = send_result.ok || 0 }}
@@ -564,18 +642,28 @@ WEBHOOK PAYLOAD:
     {{ sent_user = 0 }}
     {{ IF telegram_id && TG_TOKEN }}
 
-        {{ msg = "🚫 <b>Трафик исчерпан — VPN заблокирован</b>\n\n" }}
-        {{ IF limit_gb > 0 }}
-            {{ msg = msg _ "Использовано: <b>" _ used_gb _ " / " _ limit_gb _ " ГБ</b>\n\n" }}
+        {{ IF lang == 'ru' }}
+            {{ msg = "🚫 <b>Трафик исчерпан — VPN заблокирован</b>\n\n" }}
+            {{ IF limit_gb > 0 }}
+                {{ msg = msg _ "Использовано: <b>" _ used_gb _ " / " _ limit_gb _ " ГБ</b>\n\n" }}
+            {{ END }}
+            {{ msg = msg _ "Чтобы продолжить пользоваться VPN, сбросьте трафик в приложении 👇" }}
+            {{ btn_reset = '🔄 Сбросить трафик' }}
+        {{ ELSE }}
+            {{ msg = "🚫 <b>Traffic exhausted — VPN blocked</b>\n\n" }}
+            {{ IF limit_gb > 0 }}
+                {{ msg = msg _ "Used: <b>" _ used_gb _ " / " _ limit_gb _ " GB</b>\n\n" }}
+            {{ END }}
+            {{ msg = msg _ "To continue using VPN, reset traffic in the app 👇" }}
+            {{ btn_reset = '🔄 Reset traffic' }}
         {{ END }}
-        {{ msg = msg _ "Чтобы продолжить пользоваться VPN, сбросьте трафик в приложении 👇" }}
 
         {{ send_result = http.post(tg_url, 'content_type', 'application/json', 'content', toJson({
             'chat_id'      => telegram_id,
             'text'         => msg,
             'parse_mode'   => 'HTML',
             'reply_markup' => { 'inline_keyboard' => [
-                [{ 'text' => '🔄 Сбросить трафик', 'url' => 'https://t.me/hq_vpn_bot/web', 'style' => 'danger' }]
+                [{ 'text' => btn_reset, 'url' => 'https://t.me/hq_vpn_bot/web', 'style' => 'danger' }]
             ]}
         })) }}
         {{ sent_user = send_result.ok || 0 }}
@@ -636,34 +724,9 @@ WEBHOOK PAYLOAD:
 
 
 {{# ═══════════════════════════════════════════════════════ #}}
-{{#  Игнорируем все user.* события, не обработанные выше    #}}
+{{#  Глушим ВСЕ необработанные события                      #}}
 {{#  (not_connected, first_connected, bandwidth, limited    #}}
-{{#   уже обработаны и завершены через STOP)                #}}
+{{#   уже обработаны выше и завершены через STOP)           #}}
 {{# ═══════════════════════════════════════════════════════ #}}
 
-{{ IF event.match('^user\\.') }}
-{{ toJson({ skip => 'ignored_user_event', event => event }) }}
-{{ STOP }}
-{{ END }}
-
-
-{{# ═══════════════════════════════════════════════════════ #}}
-{{#  ОСТАЛЬНЫЕ СОБЫТИЯ — лог в админку                      #}}
-{{# ═══════════════════════════════════════════════════════ #}}
-
-{{ admin_msg = "📨 <b>Webhook:</b> <code>" _ event _ "</code>\n\n" }}
-{{ IF username }}
-    {{ admin_msg = admin_msg _ "👤 <code>" _ username _ "</code>\n" }}
-{{ END }}
-{{ IF wh_data.keys.size > 0 }}
-    {{ admin_msg = admin_msg _ "📦 scope: " _ scope }}
-{{ END }}
-
-{{ admin_send = http.post(tg_url, 'content_type', 'application/json', 'content', toJson({
-    'chat_id'           => ADMIN_CHAT_ID,
-    'message_thread_id' => ADMIN_THREAD_ID,
-    'text'              => admin_msg,
-    'parse_mode'        => 'HTML'
-})) }}
-
-{{ toJson({ success => 1, event => event, routed_to => 'admin_log' }) }}
+{{ toJson({ skip => 'ignored_event', event => event }) }}
