@@ -1,30 +1,19 @@
+{{ lang = user.settings.lang || 'ru' }}
 {"chat_id":{{ user.settings.telegram.chat_id }},
 "parse_mode":"HTML",
-"text":"Здравствуйте, {{ user.full_name }}!
-⚠️ Период действия вашего ключа подходит к концу.
-⚠️ Не забудьте оплатить ключ!
-
-{{ FOR item IN user.pays.forecast.items }}
-- Ключ №{{ item.usi }} - {{ item.name }}
-- Стоимость: {{ item.total }}₽
-- Истекает: {{ item.expire }}
-
-{{ END }}
-🎁 Бонусный счет: {{ user.get_bonus }}₽
-💳 Итог к оплате: {{ user.pays.forecast.total }}₽",
+"text":"{{ IF lang == 'en' }}Hello, <b>{{ user.full_name }}</b>! 👋\n\n⚠️ Your subscription is about to expire.\nPlease don't forget to renew!\n\n{{ FOR item IN user.pays.forecast.items }}🔑 Key #{{ item.usi }} — <b>{{ item.name }}</b>\n├ Cost: {{ item.total }}₽\n└ Expires: {{ item.expire }}\n\n{{ END }}🎁 Bonus balance: {{ user.get_bonus }}₽\n💳 <b>Total due: {{ user.pays.forecast.total }}₽</b>\n\n💡 Top up your balance to avoid service interruption.{{ ELSE }}Здравствуйте, <b>{{ user.full_name }}</b>! 👋\n\n⚠️ Период действия вашей подписки подходит к концу.\nНе забудьте продлить!\n\n{{ FOR item IN user.pays.forecast.items }}🔑 Ключ №{{ item.usi }} — <b>{{ item.name }}</b>\n├ Стоимость: {{ item.total }}₽\n└ Истекает: {{ item.expire }}\n\n{{ END }}🎁 Бонусный счёт: {{ user.get_bonus }}₽\n💳 <b>Итог к оплате: {{ user.pays.forecast.total }}₽</b>\n\n💡 Пополните баланс, чтобы избежать перебоев в работе.{{ END }}",
     "reply_markup": {
         "inline_keyboard": [
             [
                 {
-                    "text": "💰 Пополнить баланс",
-                    "web_app": {
-                        "url": "t.me/hq_vpn_bot/web"
-                    }
+                    "text": "{{ lang == 'en' ? '💰 Top up balance' : '💰 Пополнить баланс' }}",
+                    "url": "https://t.me/hq_vpn_bot/web",
+                    "style": "primary"
                 }
             ],
             [
                 {
-                    "text": "🌐 Главное меню",
+                    "text": "{{ lang == 'en' ? '🌐 Main menu' : '🌐 Главное меню' }}",
                     "callback_data": "/menu"
                 }
             ]

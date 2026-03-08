@@ -65,8 +65,8 @@ Press <b>Start</b> / Нажмите <b>Начать</b>
 
 <% CASE '/set_interface_and_go' %>
 {{ interface_set = user.set_settings({ 'interface' => 'web' }) }}
-{{ tg_lang = callback_query.from.language_code || message.from.language_code || 'ru' }}
-{{ detected = tg_lang.match('^en') ? 'en' : 'ru' }}
+{{ tg_lang = callback_query.from.language_code || message.from.language_code || 'en' }}
+{{ detected = tg_lang.match('^ru') ? 'ru' : 'en' }}
 {{ lang_set = user.set_settings({ 'lang' => detected }) }}
 {{ lang = detected }}
 {
