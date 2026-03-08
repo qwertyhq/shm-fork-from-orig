@@ -23,6 +23,8 @@
 {{ IF user.partner_id > 0 }}
 
 🤝 <b>Реферал от:</b> #uid_{{ user.partner_id }}
+➡️ @{{ user.id(user.partner_id).settings.telegram.login }}
+➡️ {{ user.id(user.partner_id).full_name }}
 {{ END }}
 {{ END }}
 {{ IF event_name == "ACTIVATE" }}
