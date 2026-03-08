@@ -26,6 +26,17 @@
 }
 {{ END }}
 {{ lang = user.settings.lang || 'ru' }}
+{{ names_en = {
+    '12' => 'VPN 1 Month',
+    '15' => 'VPN 2 Months',
+    '16' => 'VPN 3 Months',
+    '17' => 'VPN 6 Months',
+    '18' => 'VPN 12 Months',
+    '21' => '🎁 Free Trial - 7 Days 🎁',
+    '28' => 'Family 1 Month',
+    '29' => 'Family 12 Months',
+    '30' => 'Traffic Reset',
+} }}
 <% SWITCH cmd %>
 <% CASE 'USER_NOT_FOUND' %>
 {{ TEXT = BLOCK }}
@@ -161,16 +172,15 @@ https://telegra.ph/Politika-konfidencialnosti-12-05-25
 }
 
 <% CASE '/decline_rules' %>
+{{ canceled = user.set_settings({ 'cancel' => '1' }) }}
+{{ rules_reset = user.set_settings({ 'rules_accepted' => '0' }) }}
 {
     "deleteMessage": { "message_id": {{ message.message_id }} }
 },
 {
     "sendMessage": {
-        "text": "{{ lang == 'en' ? 'We are not on the same page.\\n\\nGoodbye.' : 'Нам с вами не по пути.\\n\\nДо свидания.' }}"
+        "text": "{{ lang == 'en' ? 'We are not on the same page.\\n\\nGoodbye. Press /start to try again.' : 'Нам с вами не по пути.\\n\\nДо свидания. Нажмите /start чтобы попробовать снова.' }}"
     }
-},
-{
-    "shmUserDelete": {}
 }
 
 <% CASE '/trial_order' %>
@@ -229,29 +239,21 @@ https://telegra.ph/Politika-konfidencialnosti-12-05-25
 
 <% CASE '/cancel' %>
 {{ canceled = user.set_settings({ 'cancel' => '1' }) }}
+{{ rules_reset = user.set_settings({ 'rules_accepted' => '0' }) }}
 {
     "sendMessage": {
-        "text": "{{ lang == 'en' ? 'We are not on the same page.\\n\\nGoodbye.' : 'Нам с вами не по пути.\\n\\nДо свидания.' }}"
+        "text": "{{ lang == 'en' ? 'We are not on the same page.\\n\\nGoodbye. Press /start to try again.' : 'Нам с вами не по пути.\\n\\nДо свидания. Нажмите /start чтобы попробовать снова.' }}"
     }
-},
-{
-    "shmUserDelete": {}
 }
 <% CASE ['/menu', '/start', '/deleted_us'] %>
 {{ arr = ref( user.services.list_for_api( 'category', 'vpn-m-%' ) ) }}
-{{ IF user.settings.cancel == '1' }}
-{{ TEXT = BLOCK }}
-{{ lang == 'en' ? 'You declined the rules. Would you like to reconsider?' : 'Вы отказались принимать правила, может быть вы все таки хотите их принять?' }}
-{{ END }}
-{{ buttons = BLOCK }}
-                [
-                    {
-                        "text": "{{ lang == 'en' ? 'View rules' : 'Посмотреть правила' }}",
-                        "callback_data": "/go"
-                    }
-                ]
-{{ END }}
-{{ PROCESS send text=TEXT buttons=buttons}}
+{{ IF user.settings.cancel == '1' || user.settings.rules_accepted != '1' }}
+{{ canceled = user.set_settings({ 'cancel' => '0' }) }}
+{
+    "shmRedirectCallback": {
+        "callback_data": "/go"
+    }
+}
 {{ ELSIF user.settings.interface == 'web' }}
 {{ WEB_TEXT = BLOCK }}
 {{ IF lang == 'en' }}
@@ -356,7 +358,7 @@ This message introduces the main sections of the bot (it will be active for 24 h
 {{ TEXT = BLOCK }}
     {{ IF cmd == '/deleted_us' }}
     {{ IF lang == 'en' }}
-    ❌ <b>Your subscription <u>{{ us.service.name }}</u> was deleted due to non-payment (or at your request).</b>❌
+    ❌ <b>Your subscription <u>{{ names_en.item(us.service.service_id) || us.service.name }}</u> was deleted due to non-payment (or at your request).</b>❌
 
     💡 <b>If you want to continue using our service, please create a new subscription.</b>
 
@@ -398,7 +400,7 @@ This message introduces the main sections of the bot (it will be active for 24 h
                     {{ icon = '⏳' }}
                     {{ status = lang == 'en' ? 'Processing, refresh the page' : 'Обработка, обновите страницу' }}
                 {{ END }}
-{{ lang == 'en' ? 'Plan' : 'Тариф' }}: {{ item.name }}
+{{ lang == 'en' ? 'Plan' : 'Тариф' }}: {{ lang == 'en' ? (names_en.item(item.service_id) || item.name) : item.name }}
 {{ lang == 'en' ? 'Status' : 'Статус' }}: {{ icon }} {{ status }}
 {{ lang == 'en' ? 'Expires' : 'Срок окончания' }}: {{ item.expire }}
             {{ END }}
@@ -473,9 +475,10 @@ This message introduces the main sections of the bot (it will be active for 24 h
                             {{ icon = '⏳' }}
                             {{ status = lang == 'en' ? 'Processing' : 'Обработка' }}
                         {{ END }}
+                        {{ _n = lang == 'en' ? (names_en.item(item.service_id) || item.name) : item.name }}
                     [
                         {
-                            "text": "{{ item.name }} - {{ icon }} {{ status }}",
+                            "text": "{{ _n }} - {{ icon }} {{ status }}",
                             "callback_data": "/service {{ item.user_service_id }}"
                         }
                     ],
@@ -740,7 +743,7 @@ Choose your language:
 
 <b>Your current subscription:</b>
 {{ u_service = user.services.list_for_api( 'usi', args.0 ) }}
-Plan: {{ u_service.name }}
+Plan: {{ names_en.item(u_service.service_id) || u_service.name }}
 Cost: {{ u_service.cost * (user.discount > 0 ? (1 - 0.01 * user.discount) : 1) }}
 Status: {{ u_service.status == 'ACTIVE' ? '🟢 Paid': '🔴 Blocked'}}
 Expires: {{ u_service.expire }}
@@ -764,7 +767,7 @@ Expires: {{ u_service.expire }}
                 {{ FOR item IN ref(service.api_price_list( 'category', 'vpn-m-%' )).nsort('cost') }}
                     [
                         {
-                            "text": "{{ item.name }} - {{ item.cost * (user.discount > 0 ? (1 - 0.01 * user.discount) : 1) }} ₽ {{ IF user.discount > 0 }} (-{{ user.discount }}%){{ END }}",
+                            "text": "{{ lang == 'en' ? (names_en.item(item.service_id) || item.name) : item.name }} - {{ item.cost * (user.discount > 0 ? (1 - 0.01 * user.discount) : 1) }} ₽ {{ IF user.discount > 0 }} (-{{ user.discount }}%){{ END }}",
                             "callback_data": "/prolongate_confirm {{ args.0 _ ' ' _ item.service_id }}"
                         }
                     ],
@@ -793,8 +796,8 @@ Press <b>Pay 💵</b> to top up your balance by {{ discounted_cost - money }} RU
 The plan will be extended using your account balance
     {{ END }}
 
-Current plan: {{ us.id( args.0 ).name }}
-Next plan: {{ new_service.name }}
+Current plan: {{ names_en.item(us.id( args.0 ).service_id) || us.id( args.0 ).name }}
+Next plan: {{ names_en.item(new_service.service_id) || new_service.name }}
 Cost: {{ discounted_cost }} {{ IF user.discount > 0 }} (-{{ user.discount }}%){{ END }}
 {{ ELSE }}
 💳 <b>Текущий баланс: </b>{{ user.balance }} руб.
@@ -862,9 +865,10 @@ Cost: {{ discounted_cost }} {{ IF user.discount > 0 }} (-{{ user.discount }}%){{
                             {{ icon = '⏳' }}
                             {{ status = lang == 'en' ? 'Processing' : 'Обработка' }}
                         {{ END }}
+                        {{ _n = lang == 'en' ? (names_en.item(item.service_id) || item.name) : item.name }}
                     [
                         {
-                            "text": "{{ item.name }} - {{ icon }} {{ status }}",
+                            "text": "{{ _n }} - {{ icon }} {{ status }}",
                             "callback_data": "/service {{ item.user_service_id }}"
                         }
                     ],
@@ -926,7 +930,7 @@ Cost: {{ discounted_cost }} {{ IF user.discount > 0 }} (-{{ user.discount }}%){{
 {{ TEXT = BLOCK }}
 {{ IF lang == 'en' }}
 <b>Subscription</b>:
-├ Current plan - {{ service.name }}
+├ Current plan - {{ names_en.item(service.service_id) || service.name }}
     {{ IF service.status != 'ACTIVE' }}
 └ <b>{{ status }}</b>
     {{ELSE}}
@@ -935,7 +939,7 @@ Cost: {{ discounted_cost }} {{ IF user.discount > 0 }} (-{{ user.discount }}%){{
     {{ IF service.next != null }}
         {{ next = services.list_for_api( 'service_id', service.next ) }}
 
-├ Next plan - {{ next.name }}
+├ Next plan - {{ names_en.item(next.service_id) || next.name }}
 └ Next plan cost - {{ next.cost }}
     {{ END }}
     {{ IF service.status == 'ACTIVE' }}
@@ -1149,7 +1153,7 @@ It's undetectable, so it works everywhere.
             {{ FOR item IN ref(service.api_price_list( 'category', 'vpn-m-%' )).nsort('cost') }}
                 [
                     {
-                        "text": "{{ item.name }} - {{ item.cost * (user.discount > 0 ? (1 - 0.01 * user.discount) : 1) }} ₽ {{ IF user.discount > 0 }}( -{{ user.discount }}%){{ END }}",
+                        "text": "{{ lang == 'en' ? (names_en.item(item.service_id) || item.name) : item.name }} - {{ item.cost * (user.discount > 0 ? (1 - 0.01 * user.discount) : 1) }} ₽ {{ IF user.discount > 0 }}( -{{ user.discount }}%){{ END }}",
                         "callback_data": "/serviceorder {{ item.service_id }}"
                     }
                 ],

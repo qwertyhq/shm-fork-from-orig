@@ -1,7 +1,8 @@
 {{ lang = user.settings.lang || 'ru' }}
+{{ names_en = { '12' => 'VPN 1 Month', '15' => 'VPN 2 Months', '16' => 'VPN 3 Months', '17' => 'VPN 6 Months', '18' => 'VPN 12 Months', '21' => 'Free Trial - 7 Days', '28' => 'Family 1 Month', '29' => 'Family 12 Months', '30' => 'Traffic Reset' } }}
 {"chat_id":{{ user.settings.telegram.chat_id }},
 "parse_mode":"HTML",
-"text":"{{ IF lang == 'en' }}⛔️ <b>Subscription deleted</b>\n\nService: <b>{{ us.name }}</b>\n\nIf you want to purchase a new subscription, open the app.{{ ELSE }}⛔️ <b>Подписка удалена</b>\n\nУслуга: <b>{{ us.name }}</b>\n\nЕсли хотите приобрести новую подписку — откройте приложение.{{ END }}",
+"text":"{{ IF lang == 'en' }}⛔️ <b>Subscription deleted</b>\n\nService: <b>{{ names_en.item(us.service_id) || us.name }}</b>\n\nIf you want to purchase a new subscription, open the app.{{ ELSE }}⛔️ <b>Подписка удалена</b>\n\nУслуга: <b>{{ us.name }}</b>\n\nЕсли хотите приобрести новую подписку — откройте приложение.{{ END }}",
 "reply_markup":{"inline_keyboard":[
         [
                     {

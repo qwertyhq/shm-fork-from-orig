@@ -1,8 +1,9 @@
 {{ lang = user.settings.lang || 'ru' }}
+{{ names_en = { '12' => 'VPN 1 Month', '15' => 'VPN 2 Months', '16' => 'VPN 3 Months', '17' => 'VPN 6 Months', '18' => 'VPN 12 Months', '21' => 'Free Trial - 7 Days', '28' => 'Family 1 Month', '29' => 'Family 12 Months', '30' => 'Traffic Reset' } }}
 {
     "chat_id": {{ user.settings.telegram.chat_id }},
     "parse_mode": "HTML",
-    "text": "{{ IF lang == 'en' }}🎉 <b>VPN successfully created!</b>\n\n👤 Service: <b>{{ us.name }}</b>\n\n⚠️ <b>VPN setup required</b>\n\nPress the button below to:\n• Download the app\n• Connect VPN\n• Start using{{ ELSE }}🎉 <b>VPN успешно создан!</b>\n\n👤 Услуга: <b>{{ us.name }}</b>\n\n⚠️ <b>Осталось настроить VPN</b>\n\nНажмите кнопку ниже, чтобы:\n• Скачать приложение\n• Подключить VPN\n• Начать пользоваться{{ END }}",
+    "text": "{{ IF lang == 'en' }}🎉 <b>VPN successfully created!</b>\n\n👤 Service: <b>{{ names_en.item(us.service_id) || us.name }}</b>\n\n⚠️ <b>VPN setup required</b>\n\nPress the button below to:\n• Download the app\n• Connect VPN\n• Start using{{ ELSE }}🎉 <b>VPN успешно создан!</b>\n\n👤 Услуга: <b>{{ us.name }}</b>\n\n⚠️ <b>Осталось настроить VPN</b>\n\nНажмите кнопку ниже, чтобы:\n• Скачать приложение\n• Подключить VPN\n• Начать пользоваться{{ END }}",
     "reply_markup": {
         "inline_keyboard": [
             [
