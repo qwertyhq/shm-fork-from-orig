@@ -7,6 +7,7 @@ use utf8;
 use Core::Base;
 use Core::Const;
 
+use threads; # to prevent the message on aarch64 (ARM): Can't locate object method "tid" via package "threads"
 use Email::Sender::Simple qw(sendmail);
 use Email::Sender::Transport::SMTP qw();
 use Try::Tiny;
@@ -59,6 +60,7 @@ sub send {
         to => $self->{to},
         subject => $self->{subject} || 'SHM',
         from_name => $self->{from_name} || 'SHM',
+        content_type => $self->{content_type},
         message => $message,
         %data,
     );
@@ -174,8 +176,11 @@ sub send_mail {
         subject => 'SHM',
         from_name => 'SHM',
         message => undef,
+        content_type => undef,
         @_,
     );
+
+    $args{content_type} ||= 'text/plain';
 
     return undef, {
         error => "Incorrect FROM address: $args{from}",
@@ -206,7 +211,7 @@ sub send_mail {
             Cc      => $args{cc} || "",
             BCc     => $args{bcc} || "",
             Subject => sprintf("=?UTF-8?B?%s?=", MIME::Base64::encode_base64($args{subject}, '')),
-            'Content-Type' => 'text/plain; charset=UTF-8',
+            'Content-Type' => "$args{content_type}; charset=UTF-8",
             'Content-Transfer-Encoding' => 'base64',
         ],
         body => MIME::Base64::encode_base64($args{message}, ""),
@@ -218,21 +223,26 @@ sub send_mail {
     unless ( $ENV{SHM_TEST} ) {
         my ( $host, $port ) = split(/:/, $args{host} );
 
-        my $ssl = 0;
+        my %smtp_params = (
+            host    => $host,
+            port    => $port || 25,
+            timeout => $args{timeout} || 30,
+            defined $args{ssl} ? ( ssl => $args{ssl} ) : (),
+            defined $args{starttls} ? ( starttls => $args{starttls} ) : (),
+        );
+
+        # Определяем тип шифрования
         if ( $port == 465 ) {
-            $ssl = 'ssl';
-        } elsif ( $port == 587 ) {
-            $ssl = 'starttls';
+            $smtp_params{ssl} //= 1;       # Прямой SSL/TLS
+        } elsif ( $port == 587 || $port == 25 ) {
+            $smtp_params{starttls} //= 1;  # Команда STARTTLS внутри сессии
         }
 
-        my $transport = Email::Sender::Transport::SMTP->new({
-          host => $host,
-          port => $port || 25,
-          ssl => $args{ssl} || $ssl,
-          timeout => $args{timeout} || 30,
-          $args{user} ? ( sasl_username => $args{user} ) : (),
-          $args{password} ? ( sasl_password => $args{password} ) : (),
-        });
+        # Добавляем авторизацию, если есть
+        $smtp_params{sasl_username} = $args{user}     if $args{user};
+        $smtp_params{sasl_password} = $args{password} if $args{password};
+
+        my $transport = Email::Sender::Transport::SMTP->new( \%smtp_params );
 
         try {
             sendmail( $email, { transport => $transport });

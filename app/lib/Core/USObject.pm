@@ -363,9 +363,13 @@ sub billing {
 sub touch {
     my $self = shift;
     my $e = shift || EVENT_PROLONGATE;
+    my %args = (
+        allow_partial_period => 0,
+        get_smart_args( @_ ),
+    );
 
     switch_user( $self->get_user_id );
-    return $self->process_service_recursive( $e );
+    return $self->process_service_recursive( $e, %args );
 }
 
 sub touch_api {
@@ -812,31 +816,39 @@ sub items {
 
 sub list_for_delete {
     my $self = shift;
-    my %args = (
-        days => 10,
-        @_,
-    );
 
-    return $self->_list(
-        where => { -OR => [
-                {
-                    parent => undef,
-                    auto_bill => 1,
-                    status => STATUS_BLOCK,
-                    expire => {
-                        '<', \[ 'NOW() - INTERVAL ? DAY', $args{days} ],
-                    },
-                },
-                {
-                    parent => undef,
-                    auto_bill => 1,
-                    status => STATUS_WAIT_FOR_PAY,
-                    created =>{
-                        '<', \[ 'NOW() - INTERVAL ? DAY', $args{days} ],
-                    },
-                },
-            ],
-        },
+    my $days_blocked = cfg('billing')->{cleanup}->{ $self->kind }->{block} // 10;
+    my $days_wait_for_pay = cfg('billing')->{cleanup}->{ $self->kind }->{wait_for_pay} // 10;
+
+    my @query;
+
+    if ( $days_blocked ) {
+        push @query, {
+            parent => undef,
+            auto_bill => 1,
+            status => STATUS_BLOCK,
+            expire => {
+                '<', \[ 'NOW() - INTERVAL ? DAY', $days_blocked ],
+            },
+        };
+    }
+
+    if ( $days_wait_for_pay ) {
+        push @query, {
+            parent => undef,
+            auto_bill => 1,
+            status => STATUS_WAIT_FOR_PAY,
+            created =>{
+                '<', \[ 'NOW() - INTERVAL ? DAY', $days_wait_for_pay ],
+            },
+        };
+    }
+
+    return [] unless @query;
+
+    return $self->items(
+        admin => 1,
+        where => { -OR => \@query },
     );
 }
 
@@ -895,6 +907,7 @@ sub change {
     my %args = (
         service_id => undef,
         finish_active => 1,
+        allow_partial_period => 0,
         get_smart_args( @_ ),
     );
 
@@ -909,14 +922,16 @@ sub change {
     $self->set( next => $service->id );
 
     if ( $self->get_status eq STATUS_WAIT_FOR_PAY || $self->get_status eq STATUS_BLOCK ) {
-        Core::Billing::switch_to_next_service( $self );
+        Core::Billing::switch_to_next_service( $self,
+            allow_partial_period => $args{allow_partial_period},
+        );
     } elsif ( $self->get_status eq STATUS_ACTIVE ) {
         $self->finish if $args{finish_active};
     } else {
         return undef;
     }
 
-    $self->touch;
+    $self->touch( EVENT_PROLONGATE, %args );
     return 1;
 }
 
@@ -1122,6 +1137,24 @@ sub add_period_by_money {
     $self->make_commands_by_event( EVENT_PROLONGATE );
 
     return 1;
+}
+
+sub cleanup {
+    my $self = shift;
+
+    my $arr = $self->list_for_delete();
+    for my $us ( @$arr ) {
+        logger->debug( sprintf("Cleanup us: %d %d %s %s",
+                $us->user_id,
+                $us->id,
+                $us->get_created,
+                $us->get_expire,
+            )
+        );
+        next unless $us->lock();
+        $us->delete;
+        $us->commit;
+    }
 }
 
 1;

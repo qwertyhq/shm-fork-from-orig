@@ -94,15 +94,17 @@ sub create_service_recursive {
 sub process_service_recursive {
     my $service = shift;
     my $event = shift || EVENT_PROLONGATE;
+    my %args = @_;
 
     return undef unless ref $service;
 
-    if ( $event = process_service( $service, $event ) ) {
+    if ( $event = process_service( $service, $event, %args ) ) {
         logger->info('Process service: '. $service->id . ", Result: [$event]" );
         for my $child ( @{$service->children} ) {
             process_service_recursive(
                 $service->id( $child->id ),
                 $event,
+                %args,
             );
         }
         $service->event( $event );
@@ -120,6 +122,7 @@ sub process_service_recursive {
 sub process_service {
     my $self = shift;
     my $event = shift;
+    my %args = @_;
 
     logger->info('Process service: '. $self->id . ", Event: [$event]" );
 
@@ -159,7 +162,7 @@ sub process_service {
         return undef;
     }
 
-    return prolongate( $self );
+    return prolongate( $self, %args );
 }
 
 sub add_withdraw {
@@ -182,6 +185,11 @@ sub add_withdraw_next {
         months => $self->service->get_period,
         bonus => 0,
     );
+
+    # Если денег не хватает и установлен флаг продления на всю сумму, то вычисляем wd здесь
+    if ( $self->service->settings->{allow_partial_period} ) {
+        apply_partial_period( $self, \%wd, $self->service->get_period );
+    }
 
     return add_withdraw( $self, %wd );
 }
@@ -223,6 +231,51 @@ sub calc_withdraw {
     return %wd;
 }
 
+# принимает сумму в качестве аргумента
+# вычисляет доступные бонусы
+# проверяет возможность оплаты списания (баланс, бонусы, скидки и т.п.)
+# возвращает структуру в случае успеха: деньги и бонусы, 0 - в случае нехватки средств
+sub calc_payment {
+    my $self  = shift;
+    my $total = shift;
+
+    my $user  = $self->user;
+    my $bonus = calc_available_bonuses( $self, $user->get_bonus, $total );
+
+    my $check_total = $total;
+    my $root = $self->top_parent;
+    if ( $root->service->get_is_composite ) {
+        if ( $self->id == $root->id ) {
+            # I'm a root
+            $check_total = $self->wd_total_composite;
+        } else {
+            # I'm a child
+            return 0 unless $root->is_paid;
+        }
+    }
+
+    # Not enough money
+    return 0 if (
+                    $check_total > 0 &&
+                    $user->get_balance + $user->get_credit + $bonus < $check_total &&
+                    !$user->get_can_overdraft &&
+                    !$self->get_pay_in_credit );
+
+    if ( $bonus >= $total ) {
+        $bonus = $total;
+        $total = 0;
+    } else {
+        $total -= $bonus;
+    }
+
+    return {
+        bonus => $bonus,
+        total => $total,
+    };
+}
+
+# метод пробует оплатить списание
+# списывает деньги и бонусы с баланса и возвращает статус
 sub is_pay {
     my $self = shift;
 
@@ -238,45 +291,15 @@ sub is_pay {
     # Already withdraw
     return 1 if $wd->get_withdraw_date;
 
-    my $user = $self->user;
-    my $balance = $user->get_balance + $user->get_credit;
-    my $bonus = calc_available_bonuses( $self, $user->get_bonus, $wd->get_total );
-    my $total = $wd->get_total;
+    my $pay = calc_payment( $self, $wd->get_total ) or return 0;
+    my ( $bonus, $total ) = @{$pay}{qw( bonus total )};
 
-    my $root = $self->top_parent;
-    if ( $root->service->get_is_composite ) {
-        if ( $self->id == $root->id ) {
-            # I'm a root
-            $total = $self->wd_total_composite;
-        } else {
-            # I'm a child
-            return 0 unless $root->is_paid;
-        }
-    }
-
-    # Not enough money
-    return 0 if (
-                    $total > 0 &&
-                    $balance + $bonus < $total &&
-                    !$user->get_can_overdraft &&
-                    !$self->get_pay_in_credit );
-
-    # refresh total after composite services
-    $total = $wd->get_total;
-
-    if ( $bonus >= $total ) {
-        $bonus = $total;
-        $total = 0;
-    } else {
-        $total -= $bonus;
-    }
-
-    $user->set_bonus( bonus => -$bonus, comment => { withdraw_id => $wd->id } );
-    $user->set_balance( balance => -$total );
+    $self->user->set_bonus( bonus => -$bonus, comment => { withdraw_id => $wd->id } );
+    $self->user->set_balance( balance => -$total );
 
     $wd->set(
-        bonus => $bonus,
-        total => $total,
+        bonus         => $bonus,
+        total         => $total,
         withdraw_date => now,
     );
 
@@ -332,6 +355,7 @@ sub prolongate {
     my $self = shift;
     my %args = (
         force => 0,
+        allow_partial_period => 0,
         @_,
     );
 
@@ -364,7 +388,7 @@ sub prolongate {
     if ( $self->withdraw->paid && $self->get_next == -1 ) {
         return remove( $self );
     } elsif ( $self->withdraw->paid && $self->get_next ) {
-        unless (switch_to_next_service( $self )) {
+        unless (switch_to_next_service( $self, %args )) {
             logger->error( "Failed to switch to next service for user service: " . $self->id );
             return undef;
         }
@@ -400,6 +424,10 @@ sub prolongate {
 
 sub switch_to_next_service {
         my $us = shift;
+        my %args = (
+            allow_partial_period => 0,
+            @_,
+        );
 
         my $new_service_id = $us->get_next;
         unless ( $new_service_id ) {
@@ -415,6 +443,10 @@ sub switch_to_next_service {
 
         my %wd = calc_withdraw( $us->billing, $service->get );
         delete @wd{ qw/ create_date end_date withdraw_date user_service_id / };
+
+        if ( $args{allow_partial_period} || $service->settings->{allow_partial_period} ) {
+            apply_partial_period( $us, \%wd, $service->get_period );
+        }
 
         my $wd_id;
         my $wd = $us->withdraw;
@@ -568,6 +600,30 @@ sub calc_period_by_total {
 
     no strict 'refs';
     return &{"Core::Billing::${billing}::calc_period_by_total"}( @_ );
+}
+
+sub apply_partial_period {
+    my $us     = shift;
+    my $wd_ref = shift;
+    my $period = shift;
+
+    my $pay = calc_payment( $us, $wd_ref->{total} );
+    return if $pay;
+
+    my $user  = $us->user;
+    my $total = $user->get_balance;
+    my $bonus = calc_available_bonuses( $us, $user->get_bonus, $total );
+    my $months = calc_period_by_total(
+        $us->billing,
+        total  => $total + $bonus,
+        cost   => $wd_ref->{cost},
+        period => $period,
+    );
+
+    if ( $months ne '0.0000' ) {
+        $wd_ref->{total}  = $total + $bonus;
+        $wd_ref->{months} = $months;
+    }
 }
 
 sub calc_available_bonuses {
