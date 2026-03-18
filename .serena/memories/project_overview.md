@@ -37,3 +37,8 @@ Events → Spool → spool.pl → Core::Task::make_task → Transport::send()
 - POST → api_set()
 - PUT → api_add()
 - DELETE → delete()
+
+## Custom Overrides (Docker Volume Mounts)
+- `prod-files/Const.pm` → `/app/lib/Core/Const.pm` — GROUP_ID_MAIL=13 (Brevo)
+- `prod-files/v1.cgi`, `prod-files/User.pm`, `prod-files/Passkey.pm`, `prod-files/Telegram.pm` — custom API extensions
+- Email delivery via Brevo HTTP API (server_id=20, gid=13) — see memory `brevo_email_integration`

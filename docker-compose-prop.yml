@@ -28,6 +28,7 @@ services:
       - "shm-data:/app/data"
       # - "./Telegram.pm:/app/lib/Core/Transport/Telegram.pm"
       # - "./v1.cgi:/app/public_html/shm/v1.cgi"
+      - "./prod-files/Const.pm:/app/lib/Core/Const.pm"
       - "./tribute.cgi:/app/data/pay_systems/tribute.cgi"
       - "./telegapay.cgi:/app/data/pay_systems/telegapay.cgi"
       - "./platega.cgi:/app/data/pay_systems/platega.cgi"
@@ -58,6 +59,7 @@ services:
     volumes:
       - "shm-templates:/app/templates"
       - "shm-data:/app/data"
+      - "./prod-files/Const.pm:/app/lib/Core/Const.pm"
     depends_on:
       mysql:
         condition: service_healthy

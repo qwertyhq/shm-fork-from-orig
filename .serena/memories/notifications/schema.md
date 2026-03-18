@@ -1,6 +1,15 @@
 # Notification Templates Schema
 
-## Location
+## Email Notifications (Brevo HTTP API)
+See memory `brevo_email_integration` for full details.
+- 6 transactional templates in `tempaltes/email/brevo_*.tpl` (events 46-51)
+- 1 system template `brevo_system_email.tpl` for verify_email/passwd_reset
+- Server: server_id=20, gid=13, transport=http
+- GROUP_ID_MAIL overridden to 13 via `prod-files/Const.pm` (Docker volume mount)
+
+## Telegram Notifications
+
+### Location
 `tempaltes/notifications/` — 9 files, all Telegram JSON (sendMessage format)
 
 ## Templates Overview
