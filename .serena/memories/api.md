@@ -346,7 +346,7 @@
   },
   "info": {
     "title": "SHM API v1",
-    "version": "2.1.0-37fcf0729a04628c2cf02dd9931158b52743e99e"
+    "version": "2.5.0-650fcf8f28d0ed5a2b40a4d4182f6d1c411235a0"
   },
   "openapi": "3.0.4",
   "paths": {
@@ -380,11 +380,37 @@
               "application/json": {
                 "schema": {
                   "properties": {
+                    "created": {
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "expire": {
+                      "format": "date-time",
+                      "type": "string"
+                    },
                     "promo_code": {
                       "type": "string"
                     },
+                    "reusable": {
+                      "enum": [0, 1],
+                      "type": "integer"
+                    },
+                    "status": {
+                      "enum": [0, 1],
+                      "type": "integer"
+                    },
+                    "used": {
+                      "description": "Использован ли промокод (только для одноразовых, для reusable всегда 0)",
+                      "enum": [0, 1],
+                      "type": "integer"
+                    },
+                    "used_by": {
+                      "description": "ID пользователя, использовавшего промокод",
+                      "type": "integer"
+                    },
                     "used_date": {
-                      "format": "date",
+                      "description": "Дата использования промокода",
+                      "format": "date-time",
                       "type": "string"
                     }
                   },
@@ -394,7 +420,7 @@
             }
           }
         },
-        "summary": "Список использованных промокодов",
+        "summary": "Список промокодов пользователя",
         "tags": [
           "Промокоды"
         ]
@@ -467,21 +493,21 @@
             }
           },
           {
-            "description": "Макс. кол-во записей",
-            "in": "query",
-            "name": "limit",
-            "schema": {
-              "default": 25,
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          {
             "description": "Смещение (пропуск записей)",
             "in": "query",
             "name": "offset",
             "schema": {
               "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Макс. кол-во записей",
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 25,
               "minimum": 0,
               "type": "integer"
             }
@@ -1127,21 +1153,21 @@
             }
           },
           {
-            "description": "Макс. кол-во записей",
-            "in": "query",
-            "name": "limit",
-            "schema": {
-              "default": 25,
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          {
             "description": "Смещение (пропуск записей)",
             "in": "query",
             "name": "offset",
             "schema": {
               "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Макс. кол-во записей",
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 25,
               "minimum": 0,
               "type": "integer"
             }
@@ -1424,21 +1450,21 @@
             }
           },
           {
-            "description": "Смещение (пропуск записей)",
-            "in": "query",
-            "name": "offset",
-            "schema": {
-              "default": 0,
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          {
             "description": "Макс. кол-во записей",
             "in": "query",
             "name": "limit",
             "schema": {
               "default": 25,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Смещение (пропуск записей)",
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "default": 0,
               "minimum": 0,
               "type": "integer"
             }
@@ -1564,21 +1590,21 @@
       "get": {
         "parameters": [
           {
-            "description": "Смещение (пропуск записей)",
-            "in": "query",
-            "name": "offset",
-            "schema": {
-              "default": 0,
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          {
             "description": "Макс. кол-во записей",
             "in": "query",
             "name": "limit",
             "schema": {
               "default": 25,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Смещение (пропуск записей)",
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "default": 0,
               "minimum": 0,
               "type": "integer"
             }
@@ -1958,6 +1984,367 @@
         "tags": [
           "Пользователи"
         ]
+      },
+      "get": {
+        "parameters": [
+          {
+            "description": "Макс. кол-во записей",
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 25,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Смещение (пропуск записей)",
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "oneOf": [
+                          {
+                            "$ref": "#/components/schemas/User"
+                          }
+                        ]
+                      },
+                      "type": "array"
+                    },
+                    "items": {
+                      "example": 1,
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "example": 25,
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "example": 0,
+                      "type": "integer"
+                    },
+                    "status": {
+                      "example": 200,
+                      "type": "integer"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Успешная операция"
+          }
+        },
+        "summary": "Список автоплатежей пользователя",
+        "tags": [
+          "Пользователи"
+        ]
+      }
+    },
+    "/user/email": {
+      "delete": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "oneOf": [
+                          {
+                            "$ref": "#/components/schemas/User"
+                          }
+                        ]
+                      },
+                      "type": "array"
+                    },
+                    "items": {
+                      "example": 1,
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "example": 25,
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "example": 0,
+                      "type": "integer"
+                    },
+                    "status": {
+                      "example": 200,
+                      "type": "integer"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Успешная операция"
+          }
+        },
+        "summary": "Удалить email пользователя",
+        "tags": [
+          "Пользователи"
+        ]
+      },
+      "get": {
+        "parameters": [
+          {
+            "description": "Смещение (пропуск записей)",
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Макс. кол-во записей",
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 25,
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "oneOf": [
+                          {
+                            "$ref": "#/components/schemas/User"
+                          }
+                        ]
+                      },
+                      "type": "array"
+                    },
+                    "items": {
+                      "example": 1,
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "example": 25,
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "example": 0,
+                      "type": "integer"
+                    },
+                    "status": {
+                      "example": 200,
+                      "type": "integer"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Успешная операция"
+          }
+        },
+        "summary": "Получить email пользователя",
+        "tags": [
+          "Пользователи"
+        ]
+      },
+      "post": {
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/User"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "oneOf": [
+                          {
+                            "$ref": "#/components/schemas/User"
+                          }
+                        ]
+                      },
+                      "type": "array"
+                    },
+                    "items": {
+                      "example": 1,
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "example": 25,
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "example": 0,
+                      "type": "integer"
+                    },
+                    "status": {
+                      "example": 200,
+                      "type": "integer"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Успешная операция"
+          }
+        },
+        "summary": "Верификацировать email пользователя",
+        "tags": [
+          "Пользователи"
+        ]
+      },
+      "put": {
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "email": {
+
+                  }
+                },
+                "required": [null],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "oneOf": [
+                          {
+                            "$ref": "#/components/schemas/User"
+                          }
+                        ]
+                      },
+                      "type": "array"
+                    },
+                    "items": {
+                      "example": 1,
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "example": 25,
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "example": 0,
+                      "type": "integer"
+                    },
+                    "status": {
+                      "example": 200,
+                      "type": "integer"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Успешная операция"
+          }
+        },
+        "summary": "Установить email пользователя",
+        "tags": [
+          "Пользователи"
+        ]
+      }
+    },
+    "/user/email/verify": {
+      "post": {
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/User"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "oneOf": [
+                          {
+                            "$ref": "#/components/schemas/User"
+                          }
+                        ]
+                      },
+                      "type": "array"
+                    },
+                    "items": {
+                      "example": 1,
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "example": 25,
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "example": 0,
+                      "type": "integer"
+                    },
+                    "status": {
+                      "example": 200,
+                      "type": "integer"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Успешная операция"
+          }
+        },
+        "summary": "Верификация email пользователя",
+        "tags": [
+          "Пользователи"
+        ]
       }
     },
     "/user/otp": {
@@ -2317,21 +2704,21 @@
       "get": {
         "parameters": [
           {
-            "description": "Макс. кол-во записей",
-            "in": "query",
-            "name": "limit",
-            "schema": {
-              "default": 25,
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          {
             "description": "Смещение (пропуск записей)",
             "in": "query",
             "name": "offset",
             "schema": {
               "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Макс. кол-во записей",
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 25,
               "minimum": 0,
               "type": "integer"
             }
@@ -2649,6 +3036,214 @@
         ]
       }
     },
+    "/user/passwd/reset": {
+      "post": {
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/User"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "oneOf": [
+                          {
+                            "$ref": "#/components/schemas/User"
+                          }
+                        ]
+                      },
+                      "type": "array"
+                    },
+                    "items": {
+                      "example": 1,
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "example": 25,
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "example": 0,
+                      "type": "integer"
+                    },
+                    "status": {
+                      "example": 200,
+                      "type": "integer"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Успешная операция"
+          }
+        },
+        "security": [],
+        "summary": "Запрос на сброс пароля пользователя",
+        "tags": [
+          "Пользователи"
+        ]
+      }
+    },
+    "/user/passwd/reset/verify": {
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "token",
+            "required": [
+              "token"
+            ],
+            "schema": {
+              "type": null
+            }
+          },
+          {
+            "description": "Макс. кол-во записей",
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 25,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Смещение (пропуск записей)",
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "oneOf": [
+                          {
+                            "$ref": "#/components/schemas/User"
+                          }
+                        ]
+                      },
+                      "type": "array"
+                    },
+                    "items": {
+                      "example": 1,
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "example": 25,
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "example": 0,
+                      "type": "integer"
+                    },
+                    "status": {
+                      "example": 200,
+                      "type": "integer"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Успешная операция"
+          }
+        },
+        "security": [],
+        "summary": "Проверка токена сброса пароля пользователя перед сменой пароля",
+        "tags": [
+          "Пользователи"
+        ]
+      },
+      "post": {
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "password": {
+                    "description": "пароль в зашифровнном виде",
+                    "title": "пароль",
+                    "type": "string"
+                  },
+                  "token": {
+
+                  }
+                },
+                "required": [null],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "oneOf": [
+                          {
+                            "$ref": "#/components/schemas/User"
+                          }
+                        ]
+                      },
+                      "type": "array"
+                    },
+                    "items": {
+                      "example": 1,
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "example": 25,
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "example": 0,
+                      "type": "integer"
+                    },
+                    "status": {
+                      "example": 200,
+                      "type": "integer"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Успешная операция"
+          }
+        },
+        "security": [],
+        "summary": "Сменить пароль пользователя по токену сброса",
+        "tags": [
+          "Пользователи"
+        ]
+      }
+    },
     "/user/password-auth": {
       "delete": {
         "parameters": [],
@@ -2700,21 +3295,21 @@
       "get": {
         "parameters": [
           {
-            "description": "Макс. кол-во записей",
-            "in": "query",
-            "name": "limit",
-            "schema": {
-              "default": 25,
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          {
             "description": "Смещение (пропуск записей)",
             "in": "query",
             "name": "offset",
             "schema": {
               "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Макс. кол-во записей",
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 25,
               "minimum": 0,
               "type": "integer"
             }
@@ -2896,21 +3491,21 @@
       "get": {
         "parameters": [
           {
-            "description": "Макс. кол-во записей",
-            "in": "query",
-            "name": "limit",
-            "schema": {
-              "default": 25,
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          {
             "description": "Смещение (пропуск записей)",
             "in": "query",
             "name": "offset",
             "schema": {
               "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Макс. кол-во записей",
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 25,
               "minimum": 0,
               "type": "integer"
             }
@@ -3307,21 +3902,21 @@
       "get": {
         "parameters": [
           {
-            "description": "Макс. кол-во записей",
-            "in": "query",
-            "name": "limit",
-            "schema": {
-              "default": 25,
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          {
             "description": "Смещение (пропуск записей)",
             "in": "query",
             "name": "offset",
             "schema": {
               "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Макс. кол-во записей",
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 25,
               "minimum": 0,
               "type": "integer"
             }
