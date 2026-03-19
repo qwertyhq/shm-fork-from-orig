@@ -346,7 +346,7 @@
   },
   "info": {
     "title": "SHM API v1",
-    "version": "2.5.0-650fcf8f28d0ed5a2b40a4d4182f6d1c411235a0"
+    "version": "2.7.1-bded12fe270b9d0ceddad53457ac6c1446213749"
   },
   "openapi": "3.0.4",
   "paths": {
@@ -354,21 +354,21 @@
       "get": {
         "parameters": [
           {
-            "description": "Макс. кол-во записей",
-            "in": "query",
-            "name": "limit",
-            "schema": {
-              "default": 25,
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          {
             "description": "Смещение (пропуск записей)",
             "in": "query",
             "name": "offset",
             "schema": {
               "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Макс. кол-во записей",
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 25,
               "minimum": 0,
               "type": "integer"
             }
@@ -440,21 +440,21 @@
             }
           },
           {
-            "description": "Смещение (пропуск записей)",
-            "in": "query",
-            "name": "offset",
-            "schema": {
-              "default": 0,
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          {
             "description": "Макс. кол-во записей",
             "in": "query",
             "name": "limit",
             "schema": {
               "default": 25,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Смещение (пропуск записей)",
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "default": 0,
               "minimum": 0,
               "type": "integer"
             }
@@ -493,21 +493,21 @@
             }
           },
           {
-            "description": "Смещение (пропуск записей)",
-            "in": "query",
-            "name": "offset",
-            "schema": {
-              "default": 0,
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          {
             "description": "Макс. кол-во записей",
             "in": "query",
             "name": "limit",
             "schema": {
               "default": 25,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Смещение (пропуск записей)",
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "default": 0,
               "minimum": 0,
               "type": "integer"
             }
@@ -586,21 +586,21 @@
             }
           },
           {
-            "description": "Макс. кол-во записей",
-            "in": "query",
-            "name": "limit",
-            "schema": {
-              "default": 25,
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          {
             "description": "Смещение (пропуск записей)",
             "in": "query",
             "name": "offset",
             "schema": {
               "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Макс. кол-во записей",
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 25,
               "minimum": 0,
               "type": "integer"
             }
@@ -901,21 +901,21 @@
       "get": {
         "parameters": [
           {
-            "description": "Смещение (пропуск записей)",
-            "in": "query",
-            "name": "offset",
-            "schema": {
-              "default": 0,
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          {
             "description": "Макс. кол-во записей",
             "in": "query",
             "name": "limit",
             "schema": {
               "default": 25,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Смещение (пропуск записей)",
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "default": 0,
               "minimum": 0,
               "type": "integer"
             }
@@ -1153,21 +1153,21 @@
             }
           },
           {
-            "description": "Смещение (пропуск записей)",
-            "in": "query",
-            "name": "offset",
-            "schema": {
-              "default": 0,
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          {
             "description": "Макс. кол-во записей",
             "in": "query",
             "name": "limit",
             "schema": {
               "default": 25,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Смещение (пропуск записей)",
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "default": 0,
               "minimum": 0,
               "type": "integer"
             }
@@ -1450,21 +1450,21 @@
             }
           },
           {
-            "description": "Макс. кол-во записей",
-            "in": "query",
-            "name": "limit",
-            "schema": {
-              "default": 25,
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          {
             "description": "Смещение (пропуск записей)",
             "in": "query",
             "name": "offset",
             "schema": {
               "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Макс. кол-во записей",
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 25,
               "minimum": 0,
               "type": "integer"
             }
@@ -1988,21 +1988,21 @@
       "get": {
         "parameters": [
           {
-            "description": "Макс. кол-во записей",
-            "in": "query",
-            "name": "limit",
-            "schema": {
-              "default": 25,
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          {
             "description": "Смещение (пропуск записей)",
             "in": "query",
             "name": "offset",
             "schema": {
               "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Макс. кол-во записей",
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 25,
               "minimum": 0,
               "type": "integer"
             }
@@ -2105,21 +2105,21 @@
       "get": {
         "parameters": [
           {
-            "description": "Смещение (пропуск записей)",
-            "in": "query",
-            "name": "offset",
-            "schema": {
-              "default": 0,
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          {
             "description": "Макс. кол-во записей",
             "in": "query",
             "name": "limit",
             "schema": {
               "default": 25,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Смещение (пропуск записей)",
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "default": 0,
               "minimum": 0,
               "type": "integer"
             }
@@ -2839,21 +2839,21 @@
       "get": {
         "parameters": [
           {
-            "description": "Смещение (пропуск записей)",
-            "in": "query",
-            "name": "offset",
-            "schema": {
-              "default": 0,
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          {
             "description": "Макс. кол-во записей",
             "in": "query",
             "name": "limit",
             "schema": {
               "default": 25,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Смещение (пропуск записей)",
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "default": 0,
               "minimum": 0,
               "type": "integer"
             }
@@ -3421,21 +3421,21 @@
       "get": {
         "parameters": [
           {
-            "description": "Смещение (пропуск записей)",
-            "in": "query",
-            "name": "offset",
-            "schema": {
-              "default": 0,
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          {
             "description": "Макс. кол-во записей",
             "in": "query",
             "name": "limit",
             "schema": {
               "default": 25,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Смещение (пропуск записей)",
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "default": 0,
               "minimum": 0,
               "type": "integer"
             }
