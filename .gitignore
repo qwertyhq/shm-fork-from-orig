@@ -1,3 +1,4 @@
 .vscode
 .DS_Store
+.mcp.json
 docs/PR-43-analysis.md
