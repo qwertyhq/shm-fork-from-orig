@@ -19,6 +19,36 @@ Each repo has its own `CLAUDE.md` with detailed instructions. Read the relevant 
 
 ---
 
+## Plugins & MCP Servers
+
+All MCP servers are provided via plugins (no separate `.mcp.json` needed).
+
+| Plugin | Purpose | Key Skills / Tools |
+|--------|---------|--------------------|
+| **superpowers** | Development workflow: TDD, planning, debugging, code review | `brainstorming`, `writing-plans`, `executing-plans`, `test-driven-development`, `systematic-debugging`, `subagent-driven-development`, `dispatching-parallel-agents`, `requesting-code-review`, `receiving-code-review`, `verification-before-completion`, `finishing-a-development-branch`, `using-git-worktrees`, `writing-skills` |
+| **context7** | Up-to-date library documentation lookup | `query-docs`, `resolve-library-id` |
+| **serena** | Semantic code navigation and editing | `find_symbol`, `get_symbols_overview`, `find_referencing_symbols`, `replace_symbol_body`, `insert_after_symbol`, `search_for_pattern` |
+| **playwright** | Browser automation and testing | `browser_navigate`, `browser_click`, `browser_snapshot`, `browser_fill_form`, `browser_take_screenshot` |
+| **frontend-design** | Production-grade UI/UX design | `frontend-design` |
+| **code-review** | Pull request code review | `code-review` |
+| **figma** | Figma design-to-code workflows | `implement-design`, `code-connect-components`, `create-design-system-rules` |
+| **claude-md-management** | CLAUDE.md audit and improvement | `revise-claude-md`, `claude-md-improver` |
+| **claude-code-setup** | Automation recommendations | `claude-automation-recommender` |
+| **typescript-lsp** | TypeScript language server | LSP integration |
+| **security-guidance** | Security best practices | Security analysis |
+| **github** | GitHub integration | Issues, PRs, actions |
+
+### Workflow Guidelines
+
+- Use **superpowers:brainstorming** before any new feature or design work
+- Use **superpowers:systematic-debugging** before proposing fixes for bugs
+- Use **superpowers:test-driven-development** before writing implementation code
+- Use **superpowers:verification-before-completion** before claiming work is done
+- Use **context7** to look up library docs instead of guessing APIs
+- Use **serena** for navigating unfamiliar code symbolically
+
+---
+
 # SHM Project Instructions
 
 ## Project Overview

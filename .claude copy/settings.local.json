@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /Users/qwertyhq/code/shm-fork-from-orig -type f \\\\\\(-name *.agent* -o -name *claude* -o -name *agent* \\\\\\))",
+      "Bash(find /Users/qwertyhq/code/shm-fork-from-orig -maxdepth 3 -type f \\\\\\(-name *.json -o -name *.yml -o -name *.yaml \\\\\\))",
+      "Bash(wc -l /Users/qwertyhq/code/remna-configs/*.json /Users/qwertyhq/code/remna-configs/*.sh /Users/qwertyhq/code/remna-configs/*.md)",
+      "Bash(ls /Users/qwertyhq/.mcp*)",
+      "Bash(find /Users/qwertyhq/.claude -name *.json -not -path */file-history/* -not -path */backups/* -not -path */telemetry/* -not -path */shell-snapshots/* -not -path */session-env/* -not -path */ide/* -not -path */plans/* -not -path */debug/*)",
+      "Bash(find /Users/qwertyhq -maxdepth 3 -name mcp*.json -o -name .mcp.json)",
+      "Bash(npx --yes @anthropic/serena-mcp --help)",
+      "Bash(uvx serena-mcp:*)",
+      "mcp__serena__activate_project",
+      "mcp__serena__get_symbols_overview",
+      "mcp__context7__resolve-library-id",
+      "Bash(sudo cpan:*)",
+      "Bash(cpanm Perl::LanguageServer)",
+      "Bash(brew install:*)",
+      "Bash(find /Users/qwertyhq/code/shm-fork-from-orig -type f \\\\\\(-name *.pm -o -name *.sql -o -name *.cgi -o -name *.pl \\\\\\))",
+      "Bash(grep -A 20 \"CREATE TABLE IF NOT EXISTS \\\\`promo_codes\\\\`\" /Users/qwertyhq/code/shm-fork-from-orig/app/sql/shm/shm_structure.sql)",
+      "Bash(ls -la /Users/qwertyhq/code/shm-fork-from-orig/app/lib/Core/*.pm)",
+      "Bash(grep -A 30 \"^CREATE TABLE \\\\`users\\\\`\" /Users/qwertyhq/code/shm-fork-from-orig/app/sql/shm/shm_structure.sql)",
+      "Bash(npm run:*)",
+      "mcp__serena__list_dir",
+      "mcp__serena__find_file",
+      "mcp__serena__read_memory",
+      "Bash(npx eslint:*)"
+    ],
+    "deny": [
+      "Bash(curl *)",
+      "Read(./.env)"
+    ]
+  },
+  "model": "claude-opus-4-6[1m]"
+}
