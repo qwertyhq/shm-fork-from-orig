@@ -340,6 +340,7 @@ sub passwd {
     my $self = shift;
     my %args = (
         password => undef,
+        set_by_user => 1,
         @_,
     );
 
@@ -363,6 +364,11 @@ sub passwd {
     get_service('sessions')->delete_user_sessions( user_id => $self->user_id );
 
     $user->set( password => $password );
+
+    if ( $args{set_by_user} ) {
+        $user->set_json( 'settings', { password_set_by_user => 1 } );
+    }
+
     return scalar $user->get;
 }
 
@@ -374,7 +380,7 @@ sub set_new_passwd {
     );
 
     my $new_password = passgen( $args{len} );
-    $self->passwd( password => $new_password );
+    $self->passwd( password => $new_password, set_by_user => 0 );
 
     return $new_password;
 }
@@ -732,6 +738,7 @@ sub reg {
 
 
     my $user = $self->id( $user_id );
+    $user->set_json( 'settings', { password_set_by_user => 1 } );
     $user->make_event( 'registered' );
 
     return scalar $user->get;
@@ -1346,9 +1353,11 @@ sub api_password_auth_status {
 
     my $passkey = get_service('Passkey');
     my $otp = get_service('OTP');
+    my $settings = $self->get_settings;
 
     return {
         password_auth_disabled => $self->is_password_auth_disabled ? 1 : 0,
+        password_set_by_user => $settings->{password_set_by_user} ? 1 : 0,
         passkey_enabled => $passkey->get_enabled($self) ? 1 : 0,
         otp_enabled => $otp->get_enabled($self) ? 1 : 0,
     };

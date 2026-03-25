@@ -1,0 +1,212 @@
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "api": {
+    "tag": "api",
+    "services": [
+      "HandlerService",
+      "LoggerService",
+      "StatsService"
+    ]
+  },
+  "dns": {
+    "tag": "dns-internal",
+    "servers": [
+      {
+        "address": "https://1.1.1.1/dns-query",
+        "skipFallback": false
+      },
+      {
+        "address": "https://8.8.8.8/dns-query",
+        "skipFallback": true
+      },
+      {
+        "address": "localhost",
+        "domains": [
+          "geosite:private"
+        ],
+        "skipFallback": true
+      }
+    ],
+    "disableCache": false,
+    "queryStrategy": "UseIP"
+  },
+  "inbounds": [
+    {
+      "tag": "VLESS_XHTTP_REALITY",
+      "port": 8443,
+      "listen": "0.0.0.0",
+      "_Comment": "ОСНОВНОЙ: VLESS + XHTTP + REALITY — максимальная устойчивость к DPI",
+      "protocol": "vless",
+      "settings": {
+        "clients": [],
+        "decryption": "none"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      },
+      "_CommentDest": "Выберите сайт: поддержка TLS1.3+H2, доступен из РФ, не заблокирован",
+      "streamSettings": {
+        "network": "xhttp",
+        "security": "reality",
+        "xhttpSettings": {
+          "mode": "auto",
+          "path": "/xhp",
+          "extra": {
+            "xmux": {
+              "cMaxReuseTimes": "64-128",
+              "maxConcurrency": "16-32",
+              "hKeepAlivePeriod": 0,
+              "hMaxRequestTimes": "600-900",
+              "hMaxReusableSecs": "1800-3000"
+            },
+            "noSSEHeader": false,
+            "noGRPCHeader": false,
+            "xPaddingBytes": "100-1000",
+            "scMaxBufferedPosts": 30,
+            "scMaxEachPostBytes": "800000-1000000",
+            "scMinPostsIntervalMs": "10-50",
+            "scStreamUpServerSecs": "20-80"
+          }
+        },
+        "realitySettings": {
+          "dest": "127.0.0.1:9443",
+          "show": false,
+          "xver": 0,
+          "shortIds": [
+            "270e32abca5710e7"
+          ],
+          "privateKey": "_eOwDPCrJaWjf35G2j5Vj2kgdnB3TcHQY9tMQQ063jk",
+          "serverNames": [
+            "est.z-hq.com"
+          ]
+        }
+      },
+      "_CommentWhyXhttp": "XHTTP: паддинг заголовков, XMUX рандомизация, маскировка gRPC, stream-one с REALITY",
+      "_CommentWhyReality": "Заимствует TLS-отпечаток реального сайта, GFW/ТСПУ не отличит от обычного HTTPS",
+      "_CommentDestOptions": "www.samsung.com, www.asus.com, www.amd.com, dl.google.com, www.logitech.com, www.lenovo.com"
+    },
+    {
+      "tag": "EST_VLESS_VISION_REALITY",
+      "port": 2053,
+      "listen": "0.0.0.0",
+      "_Comment": "ЗАПАСНОЙ: VLESS + Vision + REALITY — максимальная скорость (Splice на Linux)",
+      "protocol": "vless",
+      "settings": {
+        "seed": "vision-r3mna-s33d-9mXwR",
+        "clients": [],
+        "fallbacks": [],
+        "decryption": "none"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      },
+      "_CommentFlow": "xtls-rprx-vision: решает TLS-in-TLS fingerprint, Splice экономит CPU",
+      "_CommentKeys": "Можно использовать ТЕ ЖЕ ключи и shortId что и для XHTTP инбаунда",
+      "_CommentWhen": "Используйте если XHTTP заблокирован, или нужна максимальная скорость",
+      "streamSettings": {
+        "network": "raw",
+        "security": "reality",
+        "rawSettings": {},
+        "realitySettings": {
+          "dest": "127.0.0.1:9443",
+          "show": false,
+          "xver": 0,
+          "shortIds": [
+            "9f0e2c6b4833757f"
+          ],
+          "privateKey": "h6HyNktXfw4GeN_JtoWWNYA-L9DlJMue50dKcr3pd8c",
+          "serverNames": [
+            "est.z-hq.com"
+          ]
+        }
+      }
+    },
+    {
+      "tag": "EST_VLESS_HYSTERIA2",
+      "port": 443,
+      "listen": "0.0.0.0",
+      "_Comment": "HYSTERIA2: VLESS + Hysteria2 (QUIC) + TLS — высокая скорость на lossy сетях",
+      "protocol": "vless",
+      "settings": {
+        "clients": [],
+        "decryption": "none"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      },
+      "streamSettings": {
+        "network": "hysteria2",
+        "security": "tls",
+        "hysteriaSettings": {
+          "version": 2
+        },
+        "tlsSettings": {
+          "alpn": [
+            "h3"
+          ],
+          "certificates": [
+            {
+              "certificateFile": "/var/lib/remnawave/certs/fullchain.pem",
+              "keyFile": "/var/lib/remnawave/certs/privkey.pem"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "DIRECT",
+      "protocol": "freedom",
+      "settings": {
+        "domainStrategy": "ForceIPv4"
+      }
+    },
+    {
+      "tag": "BLOCK",
+      "protocol": "blackhole"
+    }
+  ],
+  "routing": {
+    "rules": [
+      {
+        "ip": [
+          "geoip:private"
+        ],
+        "type": "field",
+        "outboundTag": "BLOCK"
+      },
+      {
+        "type": "field",
+        "domain": [
+          "geosite:private"
+        ],
+        "outboundTag": "BLOCK"
+      },
+      {
+        "type": "field",
+        "protocol": [
+          "bittorrent"
+        ],
+        "outboundTag": "BLOCK"
+      }
+    ]
+  }
+}
