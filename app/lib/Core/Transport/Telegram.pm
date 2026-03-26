@@ -48,10 +48,17 @@ sub init {
     );
 
     $self->{server} = $self->config->{server} || 'https://api.telegram.org';
-    state $cached_ua = LWP::UserAgent->new(
-        timeout => 10,
-        keep_alive => 4,  # Reuse TCP connections to api.telegram.org
-    );
+
+    my $http_proxy  = $ENV{HTTPS_PROXY} || $ENV{https_proxy} || $ENV{HTTP_PROXY} || $ENV{http_proxy} || '';
+    state %ua_cache;
+    my $cached_ua = $ua_cache{$http_proxy} //= do {
+        my $ua = LWP::UserAgent->new(
+            timeout => 10,
+            keep_alive => 4,  # Reuse TCP connections to api.telegram.org
+        );
+        $ua->proxy('https', $http_proxy) if $http_proxy;
+        $ua;
+    };
     $self->{lwp} = $cached_ua;
     $self->{webhook} = 0;
     $self->{deny_answer_direct} = 1;
@@ -582,8 +589,29 @@ sub deleteMessage {
     );
 }
 
+sub find_user_by_tg {
+    my $self = shift;
+    my $tg_user = shift;
+
+    my ( $user ) = $self->user->_list(
+        where => {
+            -OR => [
+                login  => $self->get_shm_login( $tg_user->{id} ),
+                login2 => '@' . $tg_user->{id},
+                $tg_user->{username} ? ( login2 => $tg_user->{username} ) : (),
+            ],
+        },
+        limit => 1,
+    );
+    return $user;
+}
+
 sub get_shm_login {
-    return sprintf( "@%s", shift );
+    my $self = shift;
+    my $tg_user_id = shift;
+    my $prefix = $self->user_tg_settings->{login_prefix} || '@';
+
+    return sprintf( "%s%s", $prefix, $tg_user_id );
 }
 
 sub auth {
@@ -596,17 +624,7 @@ sub auth {
     my $username = $tg_user->{username};
     my $full_name = sprintf("%s %s", $tg_user->{first_name}, $tg_user->{last_name} );
 
-    my ( $user ) = $self->user->_list(
-        where => {
-            -OR => [
-                sprintf('%s->>"$.%s"', 'settings', 'telegram.user_id') => $telegram_user_id,
-                login => get_shm_login( $telegram_user_id ),
-                $username ? ( sprintf('lower(%s->>"$.%s")', 'settings', 'telegram.username') => lc( $username ) ) : (),
-                sprintf('%s->>"$.%s"', 'settings', 'telegram.chat_id') => $self->chat_id, # for backward compatible
-            ],
-        },
-        limit => 1,
-    );
+    my $user = $self->find_user_by_tg( $tg_user );
     return undef unless $user;
 
     switch_user( $user->{user_id} );
@@ -1110,7 +1128,7 @@ sub shmRegister {
     my $telegram_user_id = $tg_user->{id};
 
     my $user = $self->user->reg(
-        login => $args{user_login} || get_shm_login( $telegram_user_id ),
+        login => $args{user_login} || $self->get_shm_login( $telegram_user_id ),
         password => passgen(),
         full_name => sprintf("%s %s", $tg_user->{first_name}, $tg_user->{last_name} ),
         settings => {
@@ -1255,12 +1273,7 @@ sub webapp_auth {
             return undef;
         }
     } else {
-        my ( $user ) = $self->user->_list(
-            where => {
-                sprintf('%s->>"$.%s"', 'settings', 'telegram.user_id') => $tg_user->{id},
-            },
-            limit => 1,
-        );
+        my $user = $self->find_user_by_tg( $tg_user );
         unless ( $user ) {
             logger->error("Telegram WebApp auth error: user not found");
             $self->set_user_fail_attempt( 'webapp_auth', 3600, $self->telegram_ips ); # 5 fails/hour
@@ -1341,16 +1354,7 @@ sub web_auth {
 
     my $chat_id = $in{id};
 
-    my ($user) = $self->user->_list(
-        where => {
-            -OR => [
-                sprintf('%s->>"$.%s"', 'settings', 'telegram.user_id') => $chat_id,
-                login => get_shm_login($chat_id),
-                sprintf('%s->>"$.%s"', 'settings', 'telegram.chat_id') => $chat_id,
-            ],
-        },
-        limit => 1,
-    );
+    my $user = $self->find_user_by_tg( \%in );
 
     if ( !$user && $args{register_if_not_exists} ) {
         $user = $self->user->reg(

@@ -32,6 +32,10 @@ our @EXPORT = qw(
     remove_protected_fields
 );
 
+our @EXPORT_OK = qw(
+    clean_query_args
+);
+
 use Core::Utils qw(
     now
     decode_json
@@ -154,9 +158,23 @@ sub do {
     return $res eq '0E0' ? 0 : $res;
 }
 
+sub add_post_commit_callback {
+    my $self = shift;
+    my $cb   = shift;
+    push @{ get_service('config')->local->{_post_commit_callbacks} ||= [] }, $cb;
+}
+
 sub commit {
     my $self = shift;
-    return $self->dbh->commit unless $ENV{SHM_TEST};
+    return if $ENV{SHM_TEST};
+    my $result = $self->dbh->commit;
+
+    my $callbacks = delete get_service('config')->local->{_post_commit_callbacks};
+    for my $cb ( @{ $callbacks || [] } ) {
+        eval { $cb->() };
+        logger->warning("Post-commit callback failed: $@") if $@;
+    }
+    return $result;
 }
 
 sub rollback {
@@ -503,6 +521,15 @@ sub clean_query_args {
                 }
             } elsif ( exists $v->{default} ) { # set default value
                 $args->{ $f } //= $v->{default};
+            }
+        }
+
+        # Convert empty strings to the declared default value
+        # e.g. default => undef  → NULL, default => 0 → 0, default => {} → {}
+        for my $f ( keys %structure ) {
+            next unless exists $structure{$f}{default};
+            if ( exists $args->{$f} && defined $args->{$f} && !ref($args->{$f}) && $args->{$f} eq '' ) {
+                $args->{$f} = $structure{$f}{default};
             }
         }
     }
