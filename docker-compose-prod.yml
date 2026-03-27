@@ -1,0 +1,174 @@
+services:
+  api:
+    image: "${SHM_REPO}/shm-api:${CORE_VERSION}"
+    container_name: api
+    restart: always
+    pull_policy: always
+    links:
+      - core
+    volumes:
+      - "./prod-files/entry-api.sh:/entry.sh"
+      - "./prod-files/ws-location.conf:/etc/nginx/ws-location.conf"
+      - "./prod-files/sse-location.conf:/etc/nginx/sse-location.conf"
+    networks:
+      - remnawave-network
+
+  core:
+    image: "${SHM_REPO}/shm-core:${CORE_VERSION}"
+    container_name: core
+    pull_policy: always
+    restart: always
+    environment:
+    #  DEBUG: DEBUG
+      TZ: ${TZ}
+      LANG: C.UTF-8
+      DB_NAME: ${MYSQL_DATABASE}
+      DB_USER: ${MYSQL_USER}
+      DB_PASS: ${MYSQL_PASS}
+      DB_HOST: ${MYSQL_HOST}
+      DB_PORT: ${MYSQL_PORT}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PERL5OPT: "-MLocal::ws_init"
+    volumes:
+      - "shm-templates:/app/templates"
+      - "shm-data:/app/data"
+      - "./prod-files/Const.pm:/app/lib/Core/Const.pm"
+      - "./prod-files/WebSocketNotify.pm:/app/lib/Local/WebSocketNotify.pm"
+      - "./prod-files/DataNotify.pm:/app/lib/Local/DataNotify.pm"
+      - "./prod-files/ws_init.pl:/app/lib/Local/ws_init.pm"
+      - "./prod-files/realtime-server.pl:/app/bin/realtime-server.pl"
+      - "./prod-files/entry-core.sh:/entry.sh"
+      # - "./Telegram.pm:/app/lib/Core/Transport/Telegram.pm"
+      # - "./v1.cgi:/app/public_html/shm/v1.cgi"
+      - "./tribute.cgi:/app/data/pay_systems/tribute.cgi"
+      - "./telegapay.cgi:/app/data/pay_systems/telegapay.cgi"
+      - "./platega.cgi:/app/data/pay_systems/platega.cgi"
+
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - remnawave-network
+
+  spool:
+    image: "${SHM_REPO}/shm-core:${CORE_VERSION}"
+    restart: always
+    pull_policy: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      TZ: ${TZ}
+      LANG: C.UTF-8
+      SHM_ROLE: "spool"
+      DB_NAME: ${MYSQL_DATABASE}
+      DB_USER: ${MYSQL_USER}
+      DB_PASS: ${MYSQL_PASS}
+      DB_HOST: ${MYSQL_HOST}
+      DB_PORT: ${MYSQL_PORT}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    volumes:
+      - "shm-templates:/app/templates"
+      - "shm-data:/app/data"
+      - "./prod-files/WebSocketNotify.pm:/app/lib/Local/WebSocketNotify.pm"
+      - "./prod-files/DataNotify.pm:/app/lib/Local/DataNotify.pm"
+      - "./prod-files/spool.pl:/app/bin/spool.pl"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - remnawave-network
+
+  admin:
+    image: "danuk/shm-admin:${ADMIN_VERSION}"
+    container_name: admin-shm
+    restart: always
+    environment:
+      SHM_URL: http://api
+      VITE_SHOW_SWAGGER: "true"
+    ports:
+      - "${ADMIN_PORT}:80"
+    depends_on:
+      - api
+    networks:
+      - remnawave-network
+
+  client:
+    image: "danuk/shm-client:${CLIENT_VERSION}"
+    container_name: client-shm
+    restart: always
+    environment:
+      SHM_URL: http://api
+    ports:
+      - "${CLIENT_PORT}:80"
+    depends_on:
+      - api
+    networks:
+      - remnawave-network
+
+  mysql:
+    image: "mysql:lts"
+    restart: always
+    container_name: mysql
+    environment:
+      TZ: ${TZ}
+      LANG: C.UTF-8
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASS}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASS} 
+    volumes:
+      - "mysql-data:/var/lib/mysql"
+    healthcheck:
+      test: "mysqladmin ping -h 127.0.0.1 -u $$MYSQL_USER --password=$$MYSQL_PASSWORD"
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - remnawave-network
+
+  webdav:
+    image: "${SHM_REPO}/shm-webdav:latest"
+    restart: always
+    ports:
+      - "${WEBDAV_PORT}:80"
+    volumes:
+      - "shm-data:/app/data"
+    networks:
+      - remnawave-network
+  redis:
+    image: redis:latest
+    ports:
+      - "127.0.0.1:6379:6379"
+    restart: always
+    networks:
+      - remnawave-network
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    restart: always
+    environment:
+      PMA_HOST: mysql
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASS}
+    ports:
+      - "127.0.0.1:8083:80"
+    networks:
+      - remnawave-network
+
+volumes:
+  mysql-data:
+    driver: local
+  shm-data:
+    driver: local
+  shm-templates:
+    driver: local
+
+networks:
+  remnawave-network:
+    name: remnawave-network
+    driver: bridge
+    external: true

@@ -1,0 +1,172 @@
+[     174ms] [WARNING] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition. @ http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4435
+[     174ms] [WARNING] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath. @ http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4435
+[   29674ms] [ERROR] Warning: Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.%s platega 
+    at div
+    at div
+    at WalletPage (http://localhost:5173/src/features/wallet/pages/WalletPage.tsx:51:20)
+    at ProtectedRoute (http://localhost:5173/src/app/Router.tsx:74:27)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4131:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4601:5)
+    at Suspense
+    at AppRoutes
+    at main
+    at div
+    at Layout (http://localhost:5173/src/app/Layout.tsx:21:26)
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4544:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:5290:5)
+    at ErrorBoundary (http://localhost:5173/src/shared/components/ErrorBoundary.tsx:9:5)
+    at ThemeProvider (http://localhost:5173/@fs/Users/qwertyhq/code/wbap_v2/packages/ui/src/components/theme-provider.tsx:25:3)
+    at App @ http://localhost:5173/node_modules/.vite/deps/chunk-YGPPOL52.js?v=0f6d6c4a:520
+[   29674ms] [ERROR] Warning: Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.%s platega 
+    at div
+    at div
+    at WalletPage (http://localhost:5173/src/features/wallet/pages/WalletPage.tsx:51:20)
+    at ProtectedRoute (http://localhost:5173/src/app/Router.tsx:74:27)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4131:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4601:5)
+    at Suspense
+    at AppRoutes
+    at main
+    at div
+    at Layout (http://localhost:5173/src/app/Layout.tsx:21:26)
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4544:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:5290:5)
+    at ErrorBoundary (http://localhost:5173/src/shared/components/ErrorBoundary.tsx:9:5)
+    at ThemeProvider (http://localhost:5173/@fs/Users/qwertyhq/code/wbap_v2/packages/ui/src/components/theme-provider.tsx:25:3)
+    at App @ http://localhost:5173/node_modules/.vite/deps/chunk-YGPPOL52.js?v=0f6d6c4a:520
+[   29974ms] [ERROR] Warning: Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.%s platega 
+    at div
+    at div
+    at WalletPage (http://localhost:5173/src/features/wallet/pages/WalletPage.tsx:51:20)
+    at ProtectedRoute (http://localhost:5173/src/app/Router.tsx:74:27)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4131:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4601:5)
+    at Suspense
+    at AppRoutes
+    at main
+    at div
+    at Layout (http://localhost:5173/src/app/Layout.tsx:21:26)
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4544:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:5290:5)
+    at ErrorBoundary (http://localhost:5173/src/shared/components/ErrorBoundary.tsx:9:5)
+    at ThemeProvider (http://localhost:5173/@fs/Users/qwertyhq/code/wbap_v2/packages/ui/src/components/theme-provider.tsx:25:3)
+    at App @ http://localhost:5173/node_modules/.vite/deps/chunk-YGPPOL52.js?v=0f6d6c4a:520
+[   29974ms] [ERROR] Warning: Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.%s platega 
+    at div
+    at div
+    at WalletPage (http://localhost:5173/src/features/wallet/pages/WalletPage.tsx:51:20)
+    at ProtectedRoute (http://localhost:5173/src/app/Router.tsx:74:27)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4131:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4601:5)
+    at Suspense
+    at AppRoutes
+    at main
+    at div
+    at Layout (http://localhost:5173/src/app/Layout.tsx:21:26)
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4544:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:5290:5)
+    at ErrorBoundary (http://localhost:5173/src/shared/components/ErrorBoundary.tsx:9:5)
+    at ThemeProvider (http://localhost:5173/@fs/Users/qwertyhq/code/wbap_v2/packages/ui/src/components/theme-provider.tsx:25:3)
+    at App @ http://localhost:5173/node_modules/.vite/deps/chunk-YGPPOL52.js?v=0f6d6c4a:520
+[   29987ms] [ERROR] Warning: Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.%s platega 
+    at div
+    at div
+    at WalletPage (http://localhost:5173/src/features/wallet/pages/WalletPage.tsx:51:20)
+    at ProtectedRoute (http://localhost:5173/src/app/Router.tsx:74:27)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4131:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4601:5)
+    at Suspense
+    at AppRoutes
+    at main
+    at div
+    at Layout (http://localhost:5173/src/app/Layout.tsx:21:26)
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4544:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:5290:5)
+    at ErrorBoundary (http://localhost:5173/src/shared/components/ErrorBoundary.tsx:9:5)
+    at ThemeProvider (http://localhost:5173/@fs/Users/qwertyhq/code/wbap_v2/packages/ui/src/components/theme-provider.tsx:25:3)
+    at App @ http://localhost:5173/node_modules/.vite/deps/chunk-YGPPOL52.js?v=0f6d6c4a:520
+[   29987ms] [ERROR] Warning: Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.%s platega 
+    at div
+    at div
+    at WalletPage (http://localhost:5173/src/features/wallet/pages/WalletPage.tsx:51:20)
+    at ProtectedRoute (http://localhost:5173/src/app/Router.tsx:74:27)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4131:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4601:5)
+    at Suspense
+    at AppRoutes
+    at main
+    at div
+    at Layout (http://localhost:5173/src/app/Layout.tsx:21:26)
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4544:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:5290:5)
+    at ErrorBoundary (http://localhost:5173/src/shared/components/ErrorBoundary.tsx:9:5)
+    at ThemeProvider (http://localhost:5173/@fs/Users/qwertyhq/code/wbap_v2/packages/ui/src/components/theme-provider.tsx:25:3)
+    at App @ http://localhost:5173/node_modules/.vite/deps/chunk-YGPPOL52.js?v=0f6d6c4a:520
+[   30189ms] [ERROR] Warning: Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.%s platega 
+    at div
+    at div
+    at WalletPage (http://localhost:5173/src/features/wallet/pages/WalletPage.tsx:51:20)
+    at ProtectedRoute (http://localhost:5173/src/app/Router.tsx:74:27)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4131:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4601:5)
+    at Suspense
+    at AppRoutes
+    at main
+    at div
+    at Layout (http://localhost:5173/src/app/Layout.tsx:21:26)
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4544:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:5290:5)
+    at ErrorBoundary (http://localhost:5173/src/shared/components/ErrorBoundary.tsx:9:5)
+    at ThemeProvider (http://localhost:5173/@fs/Users/qwertyhq/code/wbap_v2/packages/ui/src/components/theme-provider.tsx:25:3)
+    at App @ http://localhost:5173/node_modules/.vite/deps/chunk-YGPPOL52.js?v=0f6d6c4a:520
+[   30189ms] [ERROR] Warning: Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.%s platega 
+    at div
+    at div
+    at WalletPage (http://localhost:5173/src/features/wallet/pages/WalletPage.tsx:51:20)
+    at ProtectedRoute (http://localhost:5173/src/app/Router.tsx:74:27)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4131:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4601:5)
+    at Suspense
+    at AppRoutes
+    at main
+    at div
+    at Layout (http://localhost:5173/src/app/Layout.tsx:21:26)
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4544:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:5290:5)
+    at ErrorBoundary (http://localhost:5173/src/shared/components/ErrorBoundary.tsx:9:5)
+    at ThemeProvider (http://localhost:5173/@fs/Users/qwertyhq/code/wbap_v2/packages/ui/src/components/theme-provider.tsx:25:3)
+    at App @ http://localhost:5173/node_modules/.vite/deps/chunk-YGPPOL52.js?v=0f6d6c4a:520
+[   30247ms] [ERROR] Warning: Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.%s platega 
+    at div
+    at div
+    at WalletPage (http://localhost:5173/src/features/wallet/pages/WalletPage.tsx:51:20)
+    at ProtectedRoute (http://localhost:5173/src/app/Router.tsx:74:27)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4131:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4601:5)
+    at Suspense
+    at AppRoutes
+    at main
+    at div
+    at Layout (http://localhost:5173/src/app/Layout.tsx:21:26)
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4544:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:5290:5)
+    at ErrorBoundary (http://localhost:5173/src/shared/components/ErrorBoundary.tsx:9:5)
+    at ThemeProvider (http://localhost:5173/@fs/Users/qwertyhq/code/wbap_v2/packages/ui/src/components/theme-provider.tsx:25:3)
+    at App @ http://localhost:5173/node_modules/.vite/deps/chunk-YGPPOL52.js?v=0f6d6c4a:520
+[   30248ms] [ERROR] Warning: Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.%s platega 
+    at div
+    at div
+    at WalletPage (http://localhost:5173/src/features/wallet/pages/WalletPage.tsx:51:20)
+    at ProtectedRoute (http://localhost:5173/src/app/Router.tsx:74:27)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4131:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4601:5)
+    at Suspense
+    at AppRoutes
+    at main
+    at div
+    at Layout (http://localhost:5173/src/app/Layout.tsx:21:26)
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:4544:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=0f6d6c4a:5290:5)
+    at ErrorBoundary (http://localhost:5173/src/shared/components/ErrorBoundary.tsx:9:5)
+    at ThemeProvider (http://localhost:5173/@fs/Users/qwertyhq/code/wbap_v2/packages/ui/src/components/theme-provider.tsx:25:3)
+    at App @ http://localhost:5173/node_modules/.vite/deps/chunk-YGPPOL52.js?v=0f6d6c4a:520

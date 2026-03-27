@@ -17,7 +17,16 @@ $| = 1;
 
 my $user = SHM->new( user_id => 1 );
 $user->dbh->{RaiseError} = 1;
-# Core::System::ServiceManager::setup();
+
+# Load WebSocket real-time notifications
+my $ws_enabled = 0;
+eval {
+    require Local::WebSocketNotify;
+    require Local::DataNotify;
+    Local::DataNotify::install();
+    $ws_enabled = 1;
+};
+say $ws_enabled ? "WS real-time enabled" : "WS disabled: $@";
 
 my $task;
 my $request_count = 0;

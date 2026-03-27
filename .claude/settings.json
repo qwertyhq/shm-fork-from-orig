@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \":*)",
+      "Bash(DEBUG=ws node -e \":*)",
+      "Bash(node -e \"console.log\\(require\\(''ws/package.json''\\).version\\)\")",
+      "Bash(grep -r \"GUID\\\\|258EAFA5\\\\|C5AB0DC\" /tmp/node_modules/ws/lib/*.js)",
+      "Bash(perl -c prod-files/realtime-server.pl)",
+      "Bash(docker-compose -f contributing/docker-compose.yml ps)",
+      "Bash(docker exec:*)",
+      "Bash(docker cp:*)",
+      "Bash(__NEW_LINE_e706b4014a4b8b3a__ docker:*)",
+      "Bash(__NEW_LINE_e706b4014a4b8b3a__ echo:*)",
+      "mcp__plugin_playwright_playwright__browser_snapshot"
+    ]
+  }
+}
