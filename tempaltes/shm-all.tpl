@@ -64,17 +64,32 @@ IF request.params.login AND request.params.format == 'json' AND request.params.s
           URL = HOST _ '/api/users/by-short-uuid/' _ shortUuid;
           result = http.get(URL,'headers',headers);
           item.http_status = result.status;
-          item.used_traffic_bytes = result.response.usedTrafficBytes;
-          item.traffic_limit_bytes = result.response.trafficLimitBytes;
-          lastConn = NULL; lastServer = NULL;
-          IF result.response.lastConnectedNode;
-            lastConn = result.response.lastConnectedNode.connectedAt;
-            lastServer = result.response.lastConnectedNode.nodeName;
+          r = result.response;
+          item.status = r.status;
+          item.expire_at = r.expireAt;
+          item.traffic_limit_bytes = r.trafficLimitBytes;
+          item.traffic_limit_strategy = r.trafficLimitStrategy;
+          item.subscription_url_remna = r.subscriptionUrl;
+          item.user_agent = r.subLastUserAgent;
+          item.sub_last_opened_at = r.subLastOpenedAt;
+          IF r.userTraffic;
+            item.used_traffic_bytes = r.userTraffic.usedTrafficBytes;
+            item.lifetime_used_traffic_bytes = r.userTraffic.lifetimeUsedTrafficBytes;
+            item.online_at = r.userTraffic.onlineAt;
+            item.first_connected_at = r.userTraffic.firstConnectedAt;
+            item.last_connected_node_uuid = r.userTraffic.lastConnectedNodeUuid;
+          ELSE;
+            item.used_traffic_bytes = r.usedTrafficBytes;
+            item.online_at = r.onlineAt;
           END;
-          IF NOT lastConn AND result.response.onlineAt; lastConn = result.response.onlineAt; END;
+          lastConn = NULL; lastServer = NULL;
+          IF r.lastConnectedNode;
+            lastConn = r.lastConnectedNode.connectedAt;
+            lastServer = r.lastConnectedNode.nodeName;
+          END;
+          IF NOT lastConn AND item.online_at; lastConn = item.online_at; END;
           item.last_connection = lastConn;
           item.last_server = lastServer;
-          item.user_agent = result.response.subLastUserAgent;
         END;
       END;
       remnaData.push(item);
@@ -108,6 +123,41 @@ IF request.params.login AND request.params.format == 'json' AND request.params.s
       });
     END;
 
+    psRaw = ref(u.pays.paysystems);
+    paySystems = [];
+    FOR ps IN psRaw;
+      FOR psName IN ps.keys;
+        psData = ps.$psName;
+        IF psData.show_for_client;
+          paySystems.push({
+            'name'=psName,
+            'title'=psData.title,
+            'currency'=psData.currency,
+            'weight'=psData.weight
+          });
+        END;
+      END;
+    END;
+
+    priceRaw = ref(services.api_price_list);
+    priceList = [];
+    FOR svc IN priceRaw;
+      priceList.push({
+        'service_id'=svc.service_id,
+        'name'=svc.name,
+        'cost'=svc.cost,
+        'period'=svc.period,
+        'category'=svc.category,
+        'real_cost'=svc.real_cost,
+        'discount'=svc.discount,
+        'cost_discount'=svc.cost_discount,
+        'cost_bonus'=svc.cost_bonus
+      });
+    END;
+
+    forecastData = u.pays.forecast('blocked',1);
+    referralsCount = u.referrals_count;
+
     response = toJson(
       'user'={
         'balance'=ret.first.balance,
@@ -126,7 +176,11 @@ IF request.params.login AND request.params.format == 'json' AND request.params.s
       'services'=servicesShort,
       'payments'={'last'=paysLast},
       'withdraws'=withdrawsShort,
-      'remna'=remnaData
+      'remna'=remnaData,
+      'pay_systems'=paySystems,
+      'price_list'=priceList,
+      'forecast'=forecastData,
+      'referrals_count'=referralsCount
     );
     response;
   ELSE;

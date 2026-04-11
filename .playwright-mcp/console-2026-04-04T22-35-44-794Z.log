@@ -1,0 +1,2 @@
+[    3749ms] [WARNING] [.WebGL-0x12400438400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels @ http://188.124.51.229:3456/login:0
+[    4348ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "username"): (More info: https://goo.gl/9p2vKq) %o @ http://188.124.51.229:3456/login:0
