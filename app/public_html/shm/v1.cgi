@@ -333,6 +333,15 @@ state $routes //= {
         swagger => { summary => 'Остановить услугу пользователя' },
     },
 },
+'/user/service/activate' => {
+    swagger => { tags => 'Услуги пользователей' },
+    POST => {
+        controller => 'USObject',
+        method => 'activate_force',
+        required => ['user_service_id'],
+        swagger => { summary => 'Возобновить услугу пользователя (BLOCK → ACTIVE)' },
+    },
+},
 '/user/service/change' => {
     swagger => { tags => 'Услуги пользователей' },
     POST => {
