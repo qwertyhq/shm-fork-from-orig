@@ -1299,6 +1299,13 @@ sub webapp_auth {
         return undef;
     }
 
+    # initData replay protection: reject a stale auth_date (mirrors web_auth).
+    # auth_date is part of the HMAC-verified data_check_string, so it is trusted here.
+    if ( $in{auth_date} && time - $in{auth_date} > 86400 ) {
+        report->error('Telegram WebApp auth data too old');
+        return undef;
+    }
+
     return {
         session_id => $self->srv('sessions')->add(),
     };
