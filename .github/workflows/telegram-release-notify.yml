@@ -46,7 +46,7 @@ jobs:
             echo "is_manual=true" >> $GITHUB_OUTPUT
             echo "✅ Ручной запуск - отправим уведомление"
           else
-            # Проверяем, что тег был создан из master ветки
+            # Проверяем, что тег был создан из release ветки
             # Получаем последний тег
             TAG_NAME=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
 
@@ -206,10 +206,10 @@ jobs:
         if: steps.check_conditions.outputs.is_manual == 'true'
         run: |
           echo "🧪 Это был тестовый запуск, выполненный вручную"
-          echo "В продакшене этот workflow будет запускаться автоматически после сборки релиза из master ветки"
+          echo "В продакшене этот workflow будет запускаться автоматически после сборки релиза из release ветки"
 
       - name: Информация о пропуске
         if: steps.check_conditions.outputs.should_notify == 'false'
         run: |
-          echo "⏭️ Уведомление пропущено - релиз не из master ветки"
-          echo "Уведомления отправляются только для релизов из master ветки (с тегом latest)"
+          echo "⏭️ Уведомление пропущено - релиз не из release ветки"
+          echo "Уведомления отправляются только для релизов из release ветки (тегов без суффиксов)"

@@ -2,7 +2,7 @@ package Core::User;
 
 use v5.14;
 
-use parent 'Core::Base';
+use parent 'Core::Base', 'Core::User::Passwd';
 use Core::Base;
 use Core::Utils qw(
     switch_user
@@ -15,13 +15,15 @@ use Core::Utils qw(
     add_date_time
     hash_merge
     add_period
+    round
+);
+use Core::User::Captcha qw(
+    gen_captcha
+    verify_captcha
 );
 use Core::Const;
 
-use Digest::SHA qw(sha1_hex hmac_sha1);
 use MIME::Base32;
-use MIME::Base64 qw(decode_base64url encode_base64 encode_base64url);
-use Math::Random::Secure qw(rand);
 
 sub table { return 'users' };
 
@@ -226,17 +228,6 @@ sub events {
     };
 }
 
-sub crypt_password {
-    my $self = shift;
-    my %args = (
-        salt => undef,
-        password => undef,
-        @_,
-    );
-
-    return sha1_hex( join '--', $args{salt}, $args{password} );
-}
-
 sub auth_api_safe {
     my $self = shift;
     my %args = (
@@ -268,7 +259,7 @@ sub auth_api_safe {
         }
     }
 
-    my $otp = get_service('OTP');
+    my $otp = get_service('User::OTP');
     if ( $otp->get_enabled($user) ) {
         unless ( $args{otp_token} ) {
             return {
@@ -321,23 +312,31 @@ sub auth {
 
     return undef unless $args{login} || $args{password};
 
-    my $password = $self->crypt_password(
-        salt => $args{login},
-        password => $args{password},
-    );
-
     my ( $user_row ) = $self->_list(
         where => {
-            login => $args{login},
-            password => $password,
-        }
+            -OR => [
+                { login => $args{login} },
+                { login2 => $args{login} },
+            ],
+        },
+        limit => 1,
     );
+
     unless ( $user_row ) {
+        return undef;
+    }
+
+    unless ( $self->verify_password( $args{password}, $user_row->{password}, $user_row->{login} ) ) {
         return undef;
     }
 
     my $user = $self->id( $user_row->{user_id} );
     return undef if $user->is_blocked;
+
+    # Auto-upgrade to current scheme ($N$) on successful login
+    if ( $user_row->{password} !~ /^\$\d+\$/ ) {
+        $user->set( password => $user->make_password( $args{password} ) );
+    }
 
     return $user;
 }
@@ -362,10 +361,7 @@ sub passwd {
         $user = get_service('user', _id => $args{user_id} );
     }
 
-    my $password = $user->crypt_password(
-        salt => $user->get_login,
-        password => $args{password},
-    );
+    my $password = $user->make_password( $args{password} );
 
     get_service('sessions')->delete_user_sessions( user_id => $self->user_id );
 
@@ -382,8 +378,11 @@ sub set_new_passwd {
     my $self = shift;
     my %args = (
         len => 10,
+        admin => 0,
         @_,
     );
+
+    return undef if $self->is_admin && !$args{admin};
 
     my $new_password = passgen( $args{len} );
     $self->passwd( password => $new_password, set_by_user => 0 );
@@ -458,91 +457,73 @@ sub passwd_reset_request {
         @_,
     );
 
-    my $user;
+    my $email;
+    if ( is_email($args{email}) ) {
+       $email = $args{email};
+    }
 
-    if ( $args{login} ) {
-        ( $user ) = $self->_list(
+    my $existing_user = $self->check_exists_logins( login => $args{login} || $email );
+    my $user_id = $existing_user ? $existing_user->{user_id} : undef;
+
+    if ( !$user_id && $email ) {
+        my $profile = get_service("profile");
+        my ( $profile_data ) = $profile->_list(
             where => {
-                login => $args{login},
+                sprintf('%s->>"$.%s"', 'data', 'email') => $email,
             },
             limit => 1,
         );
+        $user_id = $profile_data->{user_id} if $profile_data;
     }
 
-    if ( !$user && $args{email} && is_email($args{email}) ) {
-        ( $user ) = $self->_list(
-            where => {
-                sprintf('%s->>"$.%s"', 'settings', 'email') => $args{email},
-            },
-            limit => 1,
-        );
+    return { msg => 'User not found' } unless $user_id;
 
-        unless ( $user ) {
-            my $profile = get_service("profile");
-            my ( $profile_data ) = $profile->_list(
-                where => {
-                    sprintf('%s->>"$.%s"', 'data', 'email') => $args{email},
-                },
-                limit => 1,
-            );
-            if ( $profile_data ) {
-                $user = { user_id => $profile_data->{user_id} };
-            }
-        }
+    $self = $self->id( $user_id );
+    if ( $self->is_blocked ) {
+        return { msg => 'User is blocked' };
     }
 
-    if ( $user ) {
-        $self = $self->id( $user->{user_id} );
-
-        if ( $self->is_blocked ) {
-            return { msg => 'User is blocked' };
-        }
-
-        my $use_for_reset_password = cfg('cli')->{use_for_reset_password};
-
-        if ( $use_for_reset_password ) {
-            my $token = passgen( 35 );
-            my $expires = time() + 3600;
-
-            $self->user->set_settings({
-                reset_password_verify_token => $token,
-                reset_password_verify_expires => $expires,
-            });
-
-            my $project_name = cfg('company')->{name} || 'SHM';
-            my $url = cfg('cli')->{url};
-            my $link = $url ? "$url?token=$token" : undef;
-            my %mail_vars = (
-                token => $token,
-                link => $link || '',
-                url => $url || '',
-                email => $args{email} || '',
-                project_name => $project_name,
-            );
-
-            my $subject = $self->render_mail_text(
-                text => cfg('mail')->{reset_password}->{subject} || "$project_name - Сброс пароля",
-                vars => \%mail_vars,
-            );
-
-            my $message = $self->render_mail_text(
-                text => cfg('mail')->{reset_password}->{message} || "Ваша ссылка для сброса пароля: {{ link }}\n\nСсылка действительна в течение часа.",
-                vars => \%mail_vars,
-            );
-
-            $self->send_mail_message(
-                to => $args{email},
-                subject => $subject,
-                message => $message,
-            );
-        } else {
-            $self->make_event( 'user_password_reset' );
-        }
-
+    unless ( cfg('cli')->{use_for_reset_password} ) {
+        $self->make_event( 'user_password_reset' );
         return { msg => 'Successful' };
     }
 
-    return { msg => 'User not found' };
+    my $token = passgen( 35 );
+    my $expires = time() + 3600;
+
+    $self->user->set_settings({
+        reset_password_verify_token => $token,
+        reset_password_verify_expires => $expires,
+    });
+
+    my $project_name = cfg('company')->{name} || 'SHM';
+    my $url = cfg('cli')->{url};
+    my $link = $url ? "$url?token=$token" : undef;
+    my %mail_vars = (
+        token => $token,
+        link => $link || '',
+        url => $url || '',
+        email => $args{email} || '',
+        project_name => $project_name,
+    );
+
+    my $subject = $self->render_mail_text(
+        text => cfg('mail')->{reset_password}->{subject} || "$project_name - Сброс пароля",
+        vars => \%mail_vars,
+    );
+
+    my $message = $self->render_mail_text(
+        text => cfg('mail')->{reset_password}->{message} || "Ваша ссылка для сброса пароля: {{ link }}\n\nСсылка действительна в течение часа.",
+        vars => \%mail_vars,
+    );
+
+    $self->send_mail_message(
+        to => $args{email},
+        subject => $subject,
+        message => $message,
+    );
+
+    return { msg => 'Successful' };
 }
 
 sub passwd_reset_verify {
@@ -601,8 +582,12 @@ sub set_email {
         return { msg => 'is not email' };
     }
 
+    if ( $self->check_exists_logins( login => $args{email}, exclude_user_id => $self->id ) ) {
+        return { msg => 'already in use' };
+    }
+
     my $verified = 0;
-    my $current_email = $self->user->emails;
+    my $current_email = $self->user->email;
     if ( $current_email && $current_email eq $args{email} ) {
         $verified = $self->get_settings->{email_verified} // 0;
     }
@@ -612,13 +597,17 @@ sub set_email {
         email => $args{email},
     });
 
+    unless ( $self->user->get_login2 ) {
+        $self->user->set( login2 => $args{email} );
+    }
+
     return { msg => 'Successful' };
 }
 
 sub get_email {
     my $self = shift;
     return {
-        email => $self->user->emails,
+        email => $self->user->email,
         email_verified => $self->get_settings->{email_verified} // 0,
     };
 }
@@ -636,7 +625,7 @@ sub verify_email {
             return { msg => 'is not email' };
         }
 
-        my $current_email = $self->user->emails;
+        my $current_email = $self->user->email;
         unless ( $current_email && $args{email} eq $current_email ) {
             return { msg => 'Email mismatch. Use the email shown in your profile.' };
         }
@@ -740,52 +729,6 @@ sub validate_attributes {
     return $report->is_success;
 }
 
-sub gen_captcha {
-    my $self = shift;
-
-    my $a  = int( rand(9) ) + 1;
-    my $b  = int( rand(9) ) + 1;
-    my $op = int( rand(2) ) ? '+' : '-';
-    ( $a, $b ) = ( $b, $a ) if $op eq '-' && $b > $a;
-
-    my $answer    = $op eq '+' ? $a + $b : $a - $b;
-    my $timestamp = time();
-    my $secret    = cfg('billing')->{captcha_secret} // 'shm_captcha_default_key';
-
-    my $sig   = hmac_sha1( "$answer|$timestamp", $secret );
-    my $token = encode_base64url( "$answer|$timestamp|$sig" );
-    $token =~ s/=+$//;
-
-    return {
-        question => "$a $op $b",
-        token    => $token,
-    };
-}
-
-sub verify_captcha {
-    my $self = shift;
-    my %args = (
-        token  => undef,
-        answer => undef,
-        @_,
-    );
-
-    return 0 unless defined $args{token} && defined $args{answer};
-
-    my $raw = eval { decode_base64url( $args{token} ) };
-    return 0 if $@ || !$raw;
-
-    my ( $stored_answer, $timestamp, $sig ) = split /\|/, $raw, 3;
-    return 0 unless defined $stored_answer && defined $timestamp && defined $sig;
-    return 0 if time() - $timestamp > 300;  # 5 minute expiry
-
-    my $secret   = cfg('billing')->{captcha_secret} // 'shm_captcha_default_key';
-    my $expected = hmac_sha1( "$stored_answer|$timestamp", $secret );
-    return 0 unless $sig eq $expected;
-
-    return int($stored_answer) == int($args{answer}) ? 1 : 0;
-}
-
 sub reg_api_safe {
     my $self = shift;
     my %args = (
@@ -813,6 +756,12 @@ sub reg_api_safe {
         }
     }
 
+    if ( $self->check_exists_logins( login => $args{login} ) ) {
+        report->status( 409 );
+        report->add_error('Login already in use');
+        return undef;
+    }
+
     $self->set_user_fail_attempt( 'reg_api_safe', 3600 ); # 5 regs/hour
 
     return $self->reg(
@@ -834,10 +783,7 @@ sub reg {
     $args{login} = lc( $args{login} );
     $args{settings}{ip} = get_user_ip();
 
-    my $password = $self->crypt_password(
-        salt => $args{login},
-        password => $args{password},
-    );
+    my $password = $self->make_password( $args{password} );
 
     my $partner_id = delete $args{partner_id} || get_cookies('partner_id');
     if ( $partner_id ) {
@@ -858,6 +804,50 @@ sub reg {
     $user->make_event( 'registered' );
 
     return scalar $user->get;
+}
+
+sub check_exists_logins {
+    my $self = shift;
+    my %args = (
+        login => undef,
+        exclude_user_id => undef,
+        get_smart_args( @_ ),
+    );
+
+    my %where_by_login = (
+        -OR => [
+            { login  => $args{login} },
+            { login2 => $args{login} },
+        ],
+    );
+
+    # Исключаем текущего пользователя при проверке, чтобы можно было сохранять email, совпадающий с login
+    if ( $args{exclude_user_id} ) {
+        $where_by_login{user_id} = { '!=' => $args{exclude_user_id} };
+    }
+
+    my ( $user ) = $self->_list(
+        where => \%where_by_login,
+        limit => 1,
+    );
+    return $user if $user;
+
+    return undef unless is_email( $args{login} );
+
+    my %where_by_email = (
+        sprintf('%s->>"$.%s"', 'settings', 'email') => $args{login},
+    );
+
+    if ( $args{exclude_user_id} ) {
+        $where_by_email{user_id} = { '!=' => $args{exclude_user_id} };
+    }
+
+    my ( $user_by_email ) = $self->_list(
+        where => \%where_by_email,
+        limit => 1,
+    );
+
+    return $user_by_email;
 }
 
 sub services {
@@ -884,6 +874,11 @@ sub spool {
 sub spool_history {
     my $self = shift;
     return $self->srv('SpoolHistory');
+}
+
+sub mail {
+    my $self = shift;
+    return $self->srv('Transport::Mail');
 }
 
 sub set {
@@ -981,6 +976,18 @@ sub payment {
     }
 
     my $pays = $self->pays;
+
+    if ( defined $args{uniq_key} && $args{uniq_key} ne '' ) {
+        my ( $exists ) = $pays->_list(
+            where => {
+                user_id => $self->id,
+                uniq_key => $args{uniq_key},
+            },
+            limit => 1,
+        );
+        return scalar $pays->id( $exists->{id} )->get if $exists;
+    }
+
     my $pay_id;
     unless ( $pay_id = $pays->add( %args ) ) {
         get_service('report')->add_error("Can't make a payment");
@@ -1024,16 +1031,16 @@ sub recash {
 
     return {
         before => {
-            balance => sprintf("%.2f", $before{balance} ),
-            bonus => sprintf("%.2f", $before{bonus} ),
+            balance => round( $before{balance} ),
+            bonus => round( $before{bonus} ),
         },
         after => {
-            balance => sprintf("%.2f", $self->balance ),
-            bonus => sprintf("%.2f", $self->get_bonus ),
+            balance => round( $self->balance ),
+            bonus => round( $self->get_bonus ),
         },
         delta => {
-            balance => sprintf("%.2f", $self->balance - $before{balance}),
-            bonus => sprintf("%.2f", $self->get_bonus - $before{bonus}),
+            balance => round( $self->balance - $before{balance}),
+            bonus => round( $self->get_bonus - $before{bonus}),
         }
     };
 }
@@ -1205,6 +1212,7 @@ sub emails {
     my %profile = $self->profile;
     my @emails = (
         $self->get_settings->{email},
+        $self->get_login2,
         $self->get_login,
         $profile{email},
     );
@@ -1214,6 +1222,13 @@ sub emails {
     }
 
     return undef;
+}
+
+sub email {
+    my $self = shift;
+
+    my ( $email ) = $self->emails;
+    return $email;
 }
 
 sub referrals {
@@ -1229,13 +1244,19 @@ sub referrals {
 sub referrals_count {
     my $self = shift;
 
-    my @count = $self->_list(
+    my $ret = $self->count(
+        fields => [''],
         where => {
             partner_id => $self->id,
         },
     );
 
-    return scalar @count;
+    return $ret->{rows_count};
+}
+
+sub api_referrals {
+    my $self = shift;
+    return { total => $self->referrals_count };
 }
 
 sub switch {
@@ -1432,7 +1453,7 @@ sub api_disable_password_auth {
 
     my $report = get_service('report');
 
-    my $passkey = get_service('Passkey');
+    my $passkey = get_service('User::Passkey');
     unless ($passkey->get_enabled($self)) {
         $report->add_error('PASSKEY_REQUIRED');
         return undef;
@@ -1467,8 +1488,8 @@ sub api_enable_password_auth {
 sub api_password_auth_status {
     my $self = shift;
 
-    my $passkey = get_service('Passkey');
-    my $otp = get_service('OTP');
+    my $passkey = get_service('User::Passkey');
+    my $otp = get_service('User::OTP');
     my $settings = $self->get_settings;
 
     return {
@@ -1477,6 +1498,55 @@ sub api_password_auth_status {
         passkey_enabled => $passkey->get_enabled($self) ? 1 : 0,
         otp_enabled => $otp->get_enabled($self) ? 1 : 0,
     };
+}
+
+sub api_search_for_admins {
+    my $self = shift;
+    my %args = (
+        admin => 0,
+        limit => 25,
+        offset => 0,
+        text => '',
+        @_,
+    );
+
+    return $self->list_for_api() unless $args{admin};
+
+    my $text = $args{text} // '';
+    $text =~ s/^\s+//;
+    $text =~ s/\s+$//;
+
+    return $self->list_for_api(%args) unless length $text;
+
+    # Keep the same list API guardrails for limit.
+    $args{limit} = int( $args{limit} // 25 );
+    $args{limit} = 25   if $args{limit} < 0;
+    $args{limit} = 25   if $args{limit} == 0 && !$args{admin};
+    $args{limit} = 1000 if !$args{admin} && $args{limit} > 1000;
+
+    my @or_where = (
+        { login => { '-like' => "%$text%" } },
+        { login2 => { '-like' => "%$text%" } },
+        { full_name => { '-like' => "%$text%" } },
+        { phone => { '-like' => "%$text%" } },
+        { sprintf('CAST(%s AS CHAR)', 'settings') => { '-like' => "%$text%" } },
+    );
+
+    push @or_where, { user_id => int($text) } if $text =~ /^\d+$/;
+
+    my %where = (
+        -OR => \@or_where,
+    );
+
+    my $order = $self->query_for_order(%args);
+
+    return $self->_list(
+        limit => $args{limit},
+        offset => $args{offset},
+        calc => 1,
+        where => \%where,
+        $order ? ( order => $order ) : (),
+    );
 }
 
 1;

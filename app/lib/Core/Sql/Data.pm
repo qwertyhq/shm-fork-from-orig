@@ -34,6 +34,7 @@ our @EXPORT = qw(
 
 our @EXPORT_OK = qw(
     clean_query_args
+    is_safe_identifier
 );
 
 use Core::Utils qw(
@@ -121,6 +122,18 @@ sub dbh_new {
     configure( $child_dbh );
 
     return $child_dbh;
+}
+
+sub dbh_myisam {
+    my $self = shift;
+    my $local = get_service('config')->local;
+
+    if ( my $dbh = $local->{dbh_myisam} ) {
+        return $dbh if $dbh->ping;
+        $dbh->disconnect;
+    }
+
+    return $local->{dbh_myisam} = $self->dbh_new( AutoCommit => 1, InactiveDestroy => 0 );
 }
 
 sub table_allow_insert_key { return 0 };
@@ -297,6 +310,23 @@ sub prepare_query_for_filtering {
         next if $field =~ /^--/;  # reject user-supplied raw SQL markers
         my $value = $data->{$field};
 
+        # Recursively prepare logical groups so scalar refs like gt()/true
+        # are converted before SQL::Abstract receives nested conditions.
+        if ( $field =~ /^-(or|and)$/ ) {
+            if ( ref $value eq 'HASH' ) {
+                $result{$field} = prepare_query_for_filtering( $value );
+            } elsif ( ref $value eq 'ARRAY' ) {
+                my @items;
+                for my $item ( @{ $value } ) {
+                    if ( ref $item eq 'HASH' ) {
+                        push @items, prepare_query_for_filtering( $item );
+                    }
+                }
+                $result{$field} = \@items;
+            }
+            next;
+        }
+
         if (ref $value eq 'SCALAR') {
             if ($$value eq 'isEmpty') {
                 # Поле пустое (NULL или пустая строка)
@@ -444,8 +474,26 @@ sub query_for_filtering {
                     $where{ $key }{'-like'} = $args->{ $key };
                 }
             }
-        } elsif ( $key eq '-or' ) {
-            $where{ $key } = $args->{ $key };
+        } elsif ( $key eq '-or' || $key eq '-and' ) {
+            my $logic_value = $args->{ $key };
+
+            if ( ref $logic_value eq 'HASH' ) {
+                my $nested = $self->query_for_filtering( %{ $logic_value } );
+                my @conditions;
+                for my $nested_key ( sort keys %{ $nested || {} } ) {
+                    push @conditions, { $nested_key => $nested->{ $nested_key } };
+                }
+                $where{ $key } = \@conditions if @conditions;
+            }
+            elsif ( ref $logic_value eq 'ARRAY' ) {
+                my @conditions;
+                for my $item ( @{ $logic_value } ) {
+                    next unless ref $item eq 'HASH';
+                    my $nested = $self->query_for_filtering( %{ $item } );
+                    push @conditions, $nested if %{ $nested || {} };
+                }
+                $where{ $key } = \@conditions if @conditions;
+            }
         }
     }
 
@@ -691,6 +739,13 @@ sub list_for_api {
 
     delete $args{user_id} unless $args{admin};
 
+    # Validate limit: must be a positive integer, capped at 1000 for non-admins.
+    # Admins may pass limit=0 to request all rows (no LIMIT clause).
+    $args{limit} = int( $args{limit} // 25 );
+    $args{limit} = 25   if $args{limit} < 0;
+    $args{limit} = 25   if $args{limit} == 0 && !$args{admin};
+    $args{limit} = 1000 if !$args{admin} && $args{limit} > 1000;
+
     if ( $args{admin} && $args{user_id} ) {
         $args{where} = {
             user_id => delete $args{user_id},
@@ -704,12 +759,19 @@ sub list_for_api {
 
     my $method = $args{admin} ? '_list' : 'list';
 
-    # Validate fields against structure to prevent SELECT injection
+    # Validate fields against structure to prevent SELECT injection.
+    # Complex expressions (containing SQL syntax like parentheses, wildcards or dots)
+    # are treated as trusted internal code and passed through unchanged.
     my $fields;
     if ( $args{fields} && $args{fields} ne '*' && $self->can('structure') ) {
-        my %structure = %{ $self->structure };
-        my @safe = grep { exists $structure{$_} } split /\s*,\s*/, $args{fields};
-        $fields = @safe ? join(', ', map { "`$_`" } @safe) : undef;
+        if ( $args{fields} =~ /[().*]/ ) {
+            # Internal trusted SQL expression — pass through unchanged
+            $fields = $args{fields};
+        } else {
+            my %structure = %{ $self->structure };
+            my @safe = grep { exists $structure{$_} } split /\s*,\s*/, $args{fields};
+            $fields = @safe ? join(', ', map { "`$_`" } @safe) : undef;
+        }
     } elsif ( $args{fields} ) {
         $fields = $args{fields};
     }
