@@ -18,7 +18,7 @@ our @EXPORT = qw(
 );
 
 use Core::Const;
-use Core::Utils qw(now string_to_utime utime_to_string start_of_month end_of_month parse_date days_in_months);
+use Core::Utils qw(now string_to_utime utime_to_string start_of_month end_of_month parse_date days_in_months round);
 use Time::Local 'timelocal_nocheck';
 
 use base qw( Core::System::Service );
@@ -224,7 +224,7 @@ sub calc_withdraw {
     $wd{discount}||= get_service_discount( %wd );
     $wd{discount} = 0 if $service{no_discount};
 
-    $wd{total} = sprintf("%.2f", ( $wd{total} - $wd{total} * $wd{discount} / 100 ) * $wd{qnt} );
+    $wd{total} = round( ( $wd{total} - $wd{total} * $wd{discount} / 100 ) * $wd{qnt} );
 
     $wd{total} -= $wd{bonus};
 
@@ -550,15 +550,28 @@ sub money_back {
     my ($delta_money, $delta_bonus) = (0, 0);
 
     if ($calc->{total} > $wd{total}) {
+        my $paid_money = $wd{total};
+        my $paid_bonus = $wd{bonus};
+
         $delta_money = $wd{total};
         $wd{total} = 0;
 
-        $delta_bonus = $calc->{total} > $wd{bonus} ? $wd{bonus} : $calc->{total};
-        $wd{bonus} -= $delta_bonus;
-        $wd{bonus} = 0 if $wd{bonus} < 0;
+        if ( $paid_money <= 0 ) {
+            # If payment was only with bonuses, keep only the used part in bonus
+            # and return the rest to the user.
+            my $used_bonus = $calc->{total} > $paid_bonus ? $paid_bonus : $calc->{total};
+            $wd{bonus} = $used_bonus;
+            $delta_bonus = $paid_bonus - $used_bonus;
+        } else {
+            $delta_bonus = $calc->{total} > $wd{bonus} ? $wd{bonus} : $calc->{total};
+            $wd{bonus} -= $delta_bonus;
+            $wd{bonus} = 0 if $wd{bonus} < 0;
+        }
     } else {
         $delta_money = $wd{total} - $calc->{total};
         $wd{total} = $calc->{total};
+        $delta_bonus = $wd{bonus};
+        $wd{bonus} = 0;
     }
 
     $wd{months}   = $calc->{months};
@@ -626,6 +639,15 @@ sub apply_partial_period {
     }
 }
 
+
+# Calculates the bonus amount available for payment, subject to limit_bonus_percent.
+#
+# | limit_bonus_percent | total  | Result                       |
+# |---------------------|--------|------------------------------|
+# | not set             | any    | $bonus (full bonuses)        |
+# | 100                 | any    | $bonus (full bonuses)        |
+# | < 100               | <= 0   | 0  (no base for percentage)  |
+# | < 100               | > 0    | $total * percent / 100       |
 sub calc_available_bonuses {
     my $us = shift;
     my $bonus = shift;
@@ -633,18 +655,21 @@ sub calc_available_bonuses {
 
     return 0 unless $us;
     return 0 if $bonus <= 0;
-    return 0 if $total <= 0;
 
     my $limit_bonus_percent = $us->service->config->{limit_bonus_percent};
+
+    # Without a limit (or with a full 100% limit), bonuses are available regardless of total.
     return $bonus unless length $limit_bonus_percent;
+    return $bonus if int($limit_bonus_percent) >= 100;
+
+    # With a partial limit, bonuses are capped as a percentage of total.
+    # A zero or negative total means nothing to cover, so no bonuses apply.
+    return 0 if $total <= 0;
 
     my $max_bonus_amount = $total * int($limit_bonus_percent) / 100;
+    $bonus = $max_bonus_amount if $bonus > $max_bonus_amount;
 
-    if ( $bonus > $max_bonus_amount ) {
-        $bonus = $max_bonus_amount;
-    }
-
-    return sprintf("%.2f", $bonus) + 0;
+    return round( $bonus );
 }
 
 1;

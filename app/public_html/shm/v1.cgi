@@ -58,10 +58,12 @@ state $routes //= {
     },
 },
 '/user/captcha' => {
+    swagger => { tags => 'Капча' },
     GET => {
         controller      => 'User',
         method          => 'gen_captcha',
         skip_check_auth => 1,
+        swagger => { summary => 'Получение капчи' },
     },
 },
 '/user' => {
@@ -80,6 +82,14 @@ state $routes //= {
     POST => {
         controller => 'User',
         swagger => { summary => 'Изменить пользователя' },
+    },
+},
+'/user/referrals' => {
+    swagger => { tags => 'Пользователи' },
+    GET => {
+        controller => 'User',
+        method => 'api_referrals',
+            swagger => { summary => 'Получение количества рефералов' },
     },
 },
 '/user/auth' => {
@@ -134,24 +144,24 @@ state $routes //= {
 '/user/otp' => {
     swagger => { tags => 'OTP' },
     GET => {
-        controller => 'OTP',
+        controller => 'User::OTP',
         method => 'api_status',
         swagger => { summary => 'Статус OTP' },
     },
     POST => {
-        controller => 'OTP',
+        controller => 'User::OTP',
         method => 'api_verify',
         required => ['token'],
         swagger => { summary => 'Проверка OTP' },
     },
     PUT => {
-        controller => 'OTP',
+        controller => 'User::OTP',
         method => 'api_enable',
         required => ['token'],
         swagger => { summary => 'Включение OTP' },
     },
     DELETE => {
-        controller => 'OTP',
+        controller => 'User::OTP',
         method => 'api_disable',
         required => ['token'],
         swagger => { summary => 'Отключение OTP' },
@@ -160,7 +170,7 @@ state $routes //= {
 '/user/otp/setup' => {
     swagger => { tags => 'OTP' },
     POST => {
-        controller => 'OTP',
+        controller => 'User::OTP',
         method => 'api_setup',
         swagger => {
             summary => 'Настройка OTP',
@@ -195,12 +205,12 @@ state $routes //= {
 '/user/passkey/register' => {
     swagger => { tags => 'Passkey Регистрация' },
     GET => {
-        controller => 'Passkey',
+        controller => 'User::Passkey',
         method => 'api_register_options',
         swagger => { summary => 'Получить параметры регистрации Passkey' },
     },
     POST => {
-        controller => 'Passkey',
+        controller => 'User::Passkey',
         method => 'api_register_complete',
         required => ['credential_id', 'response'],
         swagger => { summary => 'Завершить регистрацию Passkey' },
@@ -209,18 +219,18 @@ state $routes //= {
 '/user/passkey' => {
     swagger => { tags => 'Passkey Настройки' },
     GET => {
-        controller => 'Passkey',
+        controller => 'User::Passkey',
         method => 'api_list',
         swagger => { summary => 'Список зарегистрированных Passkey' },
     },
     POST => {
-        controller => 'Passkey',
+        controller => 'User::Passkey',
         method => 'api_rename',
         required => ['credential_id', 'name'],
         swagger => { summary => 'Переименовать зарегистрированный Passkey по идентификатору' },
     },
     DELETE => {
-        controller => 'Passkey',
+        controller => 'User::Passkey',
         method => 'api_delete',
         required => ['credential_id'],
         swagger => { summary => 'Удалить зарегистрированный Passkey по идентификатору' },
@@ -229,13 +239,13 @@ state $routes //= {
 '/user/auth/passkey' => {
     swagger => { tags => 'Passkey Аутентификация' },
     GET => {
-        controller => 'Passkey',
+        controller => 'User::Passkey',
         method => 'api_auth_options_public',
         skip_check_auth => 1,
         swagger => { summary => 'Получить параметры публичной аутентификации Passkey' },
     },
     POST => {
-        controller => 'Passkey',
+        controller => 'User::Passkey',
         method => 'api_auth_public',
         skip_check_auth => 1,
         required => ['credential_id', 'response'],
@@ -294,7 +304,7 @@ state $routes //= {
         controller => 'User',
         method => 'verify_email',
         optional => ['email', 'code'],
-        swagger => { summary => 'Верификацировать email пользователя' },
+        swagger => { summary => 'Верифицировать email пользователя' },
     },
     DELETE => {
         controller => 'User',
@@ -385,7 +395,7 @@ state $routes //= {
     swagger => { tags => 'Платежи' },
     GET => {
         controller => 'Pay',
-        method => 'paysystems',
+        method => 'api_paysystems',
         swagger => { summary => 'Платежные системы' },
     },
 },
@@ -613,7 +623,7 @@ state $routes //= {
     },
     PUT => {
         controller => 'Service',
-        swagger => { summary => 'Создать услуг' },
+        swagger => { summary => 'Создать услугу' },
     },
     POST => {
         controller => 'Service',
@@ -696,6 +706,14 @@ state $routes //= {
         controller => 'User',
         required => ['user_id'],
         swagger => { summary => 'Удалить клиента' },
+    },
+},
+'/admin/user/search' => {
+    swagger => { tags => 'Пользователи' },
+    GET => {
+        controller => 'User',
+        method => 'api_search_for_admins',
+        swagger => { summary => 'Поиск клиентов' },
     },
 },
 '/admin/user/passwd' => {
@@ -1149,7 +1167,7 @@ state $routes //= {
         controller => 'Config',
         method => 'api_delete_value',
         required => ['value'],
-        swagger => { summary => 'Удалить значение или обьект внутри объекта конфига' },
+        swagger => { summary => 'Удалить значение или объект внутри объекта конфига' },
     },
 },
 '/admin/console' => {
@@ -1253,6 +1271,16 @@ state $routes //= {
             summary => 'Изменить настройки пользователя для Telegram бота',
         },
     },
+    DELETE => {
+        controller => 'Transport::Telegram',
+        method => 'api_delete_user_tg_settings',
+        args => {
+            format => 'json',
+        },
+        swagger => {
+            summary => 'Удалить (отвязать) Telegram аккаунт пользователя',
+        },
+    },
 },
 '/telegram/bot' => {
     POST => {
@@ -1345,10 +1373,150 @@ state $routes //= {
         method => 'web_auth',
         args => {
             format => 'json',
+            code => undef,
+            redirect_uri => undef,
+            code_verifier => undef,
+            state => undef,
+            expected_state => undef,
+            client_id => undef,
+            client_secret => undef,
+            id_token => undef,
+            nonce => undef,
+            profile => 'telegram_bot',
+            register_if_not_exists => 0,
+            bind_to_profile => 0,
+            uid => undef,
+            query => undef,
+            id => undef,
+            first_name => undef,
+            last_name => undef,
+            username => undef,
+            photo_url => undef,
+            auth_date => undef,
+            hash => undef,
         },
         swagger => {
-            summary => 'Авторизация через Telegram Widjet',
+            summary => 'Авторизация через Telegram Login (OIDC id_token или legacy Widget)',
              responses => {
+                '200' => {
+                    content => {
+                        'application/json' => {
+                            schema => {
+                                type => 'object',
+                                properties => {
+                                    session_id => {
+                                        type => 'string'
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+},
+'/telegram/web/auth/init' => {
+    swagger => {
+        tags => 'Telegram bot',
+    },
+    GET => {
+        skip_check_auth => 1,
+        controller => 'Transport::Telegram',
+        method => 'telegram_oidc_init',
+        args => {
+            format => 'json',
+            profile => 'telegram_bot',
+            redirect_uri => undef,
+            return_url => undef,
+            scope => 'openid profile',
+            register_if_not_exists => 0,
+            bind_to_profile => 0,
+            uid => undef,
+            ttl => 600,
+        },
+        swagger => {
+            summary => 'Инициализация Telegram Login OIDC (state, nonce, PKCE)',
+            responses => {
+                '200' => {
+                    content => {
+                        'application/json' => {
+                            schema => {
+                                type => 'object',
+                                properties => {
+                                    auth_url => { type => 'string' },
+                                    state => { type => 'string' },
+                                    nonce => { type => 'string' },
+                                    code_challenge => { type => 'string' },
+                                    code_challenge_method => { type => 'string' },
+                                    redirect_uri => { type => 'string' },
+                                    expires_in => { type => 'number' },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+},
+'/telegram/web/auth/start' => {
+    swagger => {
+        tags => 'Telegram bot',
+    },
+    GET => {
+        skip_check_auth => 1,
+        controller => 'Transport::Telegram',
+        method => 'telegram_oidc_start_redirect',
+        args => {
+            format => 'json',
+            profile => 'telegram_bot',
+            redirect_uri => undef,
+            return_url => undef,
+            scope => 'openid profile',
+            register_if_not_exists => 0,
+            bind_to_profile => 0,
+            uid => undef,
+            ttl => 600,
+        },
+        swagger => {
+            summary => 'Старт Telegram Login OIDC с HTTP redirect на Telegram OAuth',
+            responses => {
+                '302' => {
+                    description => 'Redirect to Telegram OAuth',
+                },
+            },
+        },
+    },
+},
+'/telegram/web/callback' => {
+    swagger => {
+        tags => 'Telegram bot',
+    },
+    GET => {
+        skip_check_auth => 1,
+        controller => 'Transport::Telegram',
+        method => 'web_auth_callback',
+        args => {
+            format => 'json',
+            code => undef,
+            redirect_uri => undef,
+            return_url => undef,
+            code_verifier => undef,
+            state => undef,
+            expected_state => undef,
+            client_id => undef,
+            client_secret => undef,
+            id_token => undef,
+            nonce => undef,
+            profile => 'telegram_bot',
+            register_if_not_exists => 0,
+            bind_to_profile => 0,
+            uid => undef,
+        },
+        swagger => {
+            summary => 'Callback endpoint для Telegram Login (OIDC code flow)',
+            responses => {
                 '200' => {
                     content => {
                         'application/json' => {
@@ -1642,10 +1810,11 @@ if ( my $p = $router->match( sprintf("%s:%s", $ENV{REQUEST_METHOD}, $uri )) ) {
 
     my $report = get_service('report');
     unless ( $report->is_success || $p->{skip_errors} ) {
-        my $status = $report->status || 400;
-        print_header( status => $status );
+        my %headers = $report->headers;
+        $headers{status} ||= 400;
+        print_header( %headers );
         my ( $err_msg ) = $report->errors;
-        print_json( { status => $status, error => $err_msg } );
+        print_json( { status => $headers{status}, error => $err_msg } );
         exit 0;
     }
 

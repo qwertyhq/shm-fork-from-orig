@@ -9,6 +9,7 @@ use Core::Utils qw(
     switch_user
     add_date_time
     start_of_day
+    round_up
 );
 
 sub table { return 'pays_history' };
@@ -232,8 +233,8 @@ sub forecast {
     # Do not send forecast if services not expired or not exists
     $ret{total} = 0 unless scalar @forecast_services;
 
-    $ret{dept} = sprintf("%.2f", $ret{dept} ) + 0 if $ret{dept};
-    $ret{total} = sprintf("%.2f", $ret{total} ) + 0;
+    $ret{dept} = round_up( $ret{dept} ) if $ret{dept};
+    $ret{total} = round_up( $ret{total} );
 
     return \%ret;
 }
@@ -320,7 +321,10 @@ sub paysystems {
         };
     }
 
-    return sort { $b->{weight} <=> $a->{weight} } @ret;
+    my @sorted = sort { $b->{weight} <=> $a->{weight} } @ret;
+    return \@sorted; # always return ref for templates (wantarray is not suitable for templates)
 }
+
+sub api_paysystems { @{ shift->paysystems } };
 
 1;

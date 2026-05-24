@@ -67,7 +67,7 @@ subtest 'Moneyback' => sub {
               'user_id' => 40092,
               'user_service_id' => $us->id,
               'qnt' => 1,
-              'total' => '60.00',
+              'total' => 60,
               'end_date' => '2019-04-03 01:00:00',
               'cost' => '900',
               'service_id' => $service->id,
@@ -134,7 +134,7 @@ subtest 'Moneyback' => sub {
               withdraw_date => '2022-01-01 00:00:00',
               end_date => '2022-02-01 00:00:00',
               cost => 900,
-              total => '300.00',
+              total => 300,
               user_service_id => $us->id,
               service_id => $service->id,
               withdraw_id => $wd->id,
@@ -213,6 +213,112 @@ subtest 'Moneyback with bonuses' => sub {
 
     #use Data::Dumper;
     #say Dumper( $user->bonus->list );
+};
+
+subtest 'Moneyback with bonuses when money covers used period' => sub {
+    $user->set( balance => 500, bonus => 500 );
+
+    is($user->get_balance, 500);
+    is($user->get_bonus, 500);
+
+    my $service = get_service('service')->add(
+        name => 'test service',
+        cost => 900,
+        period => 3,
+        category => 'test',
+        no_discount => 1,
+    );
+
+    Test::MockTime::set_fixed_time('2022-01-01T00:00:00Z');
+
+    my $us = create_service(
+        service_id => $service->id,
+        months => 3,
+    );
+
+    my $wd = $us->withdraw;
+    cmp_deeply( scalar $wd->get,
+        {
+              user_id => 40092,
+              bonus => 500,
+              months => 3,
+              qnt => 1,
+              discount => 0,
+              create_date => '2022-01-01 00:00:00',
+              withdraw_date => '2022-01-01 00:00:00',
+              end_date => '2022-03-31 23:59:59',
+              cost => 900,
+              total => 400,
+              user_service_id => $us->id,
+              service_id => $service->id,
+              withdraw_id => $wd->id,
+          }
+    , 'Check withdraw');
+
+    Test::MockTime::set_fixed_time('2022-02-01T00:00:00Z');
+    $us->set( expire => now );
+
+    money_back( $us );
+
+    cmp_deeply( scalar $wd->get,
+        {
+              user_id => 40092,
+              bonus => 0,
+              months => '1.00',
+              qnt => 1,
+              discount => 0,
+              create_date => '2022-01-01 00:00:00',
+              withdraw_date => '2022-01-01 00:00:00',
+              end_date => '2022-02-01 00:00:00',
+              cost => 900,
+              total => 300,
+              user_service_id => $us->id,
+              service_id => $service->id,
+              withdraw_id => $wd->id,
+        }
+    , 'Check withdraw after money back');
+
+    is($user->get_balance, 200, 'Check balance after money back');
+    is($user->get_bonus, 500, 'Check bonuses after money back');
+};
+
+subtest 'Moneyback shortly after full bonus payment' => sub {
+    $user->set( balance => 0, bonus => 500 );
+
+    is($user->get_balance, 0);
+    is($user->get_bonus, 500);
+
+    my $service = get_service('service')->add(
+        name => 'test service',
+        cost => 199,
+        period => 1,
+        category => 'test',
+        no_discount => 1,
+    );
+
+    Test::MockTime::set_fixed_time('2022-03-01T00:00:00Z');
+
+    my $us = create_service(
+        service_id => $service->id,
+        months => 1,
+    );
+
+    is($user->get_bonus, 301);
+
+    my $wd = $us->withdraw;
+    is( $wd->get->{total}, 0, 'All paid by bonuses (no money part)' );
+    is( $wd->get->{bonus}, 199, 'Bonus part charged in full' );
+
+    Test::MockTime::set_fixed_time('2022-03-02T00:00:00Z');
+    $us->set( expire => now );
+
+    money_back( $us );
+
+    is($user->get_bonus, 493.58, 'Most bonuses are returned to user');
+
+    my $wd_after = $wd->get;
+    is( $wd_after->{total}, 0, 'All paid by bonuses (no money part)' );
+    is( $wd_after->{bonus}, 6.42);
 };
 
 done_testing();
