@@ -36,6 +36,7 @@ services:
       - "./prod-files/Const.pm:/app/lib/Core/Const.pm"
       - "./prod-files/WebSocketNotify.pm:/app/lib/Local/WebSocketNotify.pm"
       - "./prod-files/DataNotify.pm:/app/lib/Local/DataNotify.pm"
+      - "./prod-files/User.pm:/app/lib/Core/User.pm"
       - "./prod-files/ws_init.pl:/app/lib/Local/ws_init.pm"
       - "./prod-files/realtime-server.pl:/app/bin/realtime-server.pl"
       - "./prod-files/entry-core.sh:/entry.sh"
@@ -77,6 +78,7 @@ services:
       - "shm-data:/app/data"
       - "./prod-files/WebSocketNotify.pm:/app/lib/Local/WebSocketNotify.pm"
       - "./prod-files/DataNotify.pm:/app/lib/Local/DataNotify.pm"
+      - "./prod-files/User.pm:/app/lib/Core/User.pm"
       - "./prod-files/spool.pl:/app/bin/spool.pl"
     depends_on:
       mysql:

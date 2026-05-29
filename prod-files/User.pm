@@ -916,6 +916,32 @@ sub set_balance {
 
     $self->reload() if $ret;
 
+    # Realtime: raw UPDATE выше минует Core::Sql::Data::_set, который оборачивает
+    # Local::DataNotify, поэтому SSE-событие об изменении баланса само не публикуется.
+    # Эмитим явно — чисто-балансовые правки (ручная корректировка/рефанд) долетают до
+    # клиента почти мгновенно, а не только 20с-поллингом. Тот же dedup-ключ ws:users:<id>
+    # и delete-в-callback, что и в DataNotify: коалесинг в рамках транзакции + сброс после
+    # публикации (важно для долгоживущего spool-воркера). Всё в eval: отсутствие
+    # realtime-модуля или любая ошибка не должны ломать обновление баланса.
+    if ( $ret ) {
+        eval {
+            require Local::WebSocketNotify;
+            my $uid = $self->id;
+            my $pending = Core::System::ServiceManager::get_service('config')->local;
+            my $key = "ws:users:$uid";
+            unless ( $pending->{$key}++ ) {
+                $self->add_post_commit_callback(sub {
+                    Local::WebSocketNotify::publish(
+                        action  => 'update',
+                        table   => 'users',
+                        user_id => $uid,
+                    );
+                    delete $pending->{$key};
+                });
+            }
+        };
+    }
+
     return $ret;
 }
 
